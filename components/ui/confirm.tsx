@@ -1,11 +1,12 @@
-import {Alert, AlertButton} from 'react-native';
+import type {AlertButton} from 'react-native';
+import {Alert} from 'react-native';
 
 export async function confirm(
   title: string,
   message: string,
   confirmText = 'Confirm',
   destructive = false,
-) {
+): Promise<boolean> {
   return new Promise<boolean>(resolve => {
     const buttons: AlertButton[] = [
       {text: 'Cancel', style: 'cancel', onPress: () => resolve(false)},

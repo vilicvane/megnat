@@ -1,15 +1,15 @@
-import {router, useLocalSearchParams} from 'expo-router';
-import React, {useEffect, useState} from 'react';
+import {router} from 'expo-router';
+import type {ReactNode} from 'react';
+import React, {useState} from 'react';
 import {Alert, ScrollView, View} from 'react-native';
-import {Appbar, Button, List} from 'react-native-paper';
+import {Appbar, List} from 'react-native-paper';
 
-import {tangem, tangemWalletsToWallets, tangemWalletToWallet} from '@/tangem';
-import {confirm} from '@/components/ui/confirm';
-import {useEntrances} from '@/entrances';
-import {AsyncButton, AsyncIconButton} from '@/components/ui/async-buttons';
-import {useRefresh} from '@/hooks/miscellaneous';
+import {AsyncButton, AsyncIconButton, confirm} from '../components/ui/index.js';
+import {useEntrances} from '../entrances.js';
+import {useRefresh} from '../hooks/index.js';
+import {tangem, tangemWalletToWallet} from '../tangem.js';
 
-export default function CardSettingsScreen() {
+export default function CardSettingsScreen(): ReactNode {
   const {uiService} = useEntrances();
 
   const refresh = useRefresh();
@@ -146,7 +146,7 @@ async function purgeWallet(
   cardId: string,
   address: string | undefined,
   walletPublicKey: string,
-) {
+): Promise<void> {
   const identifier = address
     ? `an address starts with ${address.slice(0, 8)}`
     : `the public key starts with ${walletPublicKey.slice(0, 8)}...`;
@@ -173,11 +173,11 @@ async function purgeWallet(
   await tangem.purgeWallet({cardId, walletPublicKey});
 }
 
-async function changeAccessCode(cardId: string) {
+async function changeAccessCode(cardId: string): Promise<void> {
   await tangem.setAccessCode({cardId});
 }
 
-async function purgeAllWallets(cardId: string) {
+async function purgeAllWallets(cardId: string): Promise<void> {
   if (
     !(await confirm(
       'Purge all wallets',

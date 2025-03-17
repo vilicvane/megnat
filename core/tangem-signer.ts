@@ -2,8 +2,11 @@
  * Basically copied from ethers.js BaseWallet.
  */
 
-import {tangem} from '@/tangem';
+import type {TransactionLike} from 'ethers';
 import {
+  Signature,
+  Transaction,
+  TypedDataEncoder,
   assert,
   assertArgument,
   copyRequest,
@@ -11,12 +14,11 @@ import {
   hashMessage,
   resolveAddress,
   resolveProperties,
-  Signature,
-  Transaction,
-  TransactionLike,
-  TypedDataEncoder,
 } from 'ethers';
-import {WalletDerivation} from './wallet';
+
+import {tangem} from '../tangem.js';
+
+import type {WalletDerivation} from './wallet.js';
 
 export class TangemSigner extends ethers.AbstractSigner {
   constructor(
@@ -141,9 +143,9 @@ export class TangemSigner extends ethers.AbstractSigner {
     tangemSignature: string,
     hash: string,
   ): string {
-    const signature = Signature.from('0x' + tangemSignature);
+    const signature = Signature.from(`0x${tangemSignature}`);
 
-    for (let v of [27, 28]) {
+    for (const v of [27, 28]) {
       signature.v = v;
 
       if (ethers.recoverAddress(hash, signature) === this.derivation.address) {

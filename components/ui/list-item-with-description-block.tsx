@@ -1,3 +1,4 @@
+import type {ReactNode} from 'react';
 import {View} from 'react-native';
 import {List, Text, useTheme} from 'react-native-paper';
 
@@ -9,7 +10,7 @@ export type ListItemWithDescriptionBlockProps = {
 export function ListItemWithDescriptionBlock({
   title,
   description,
-}: ListItemWithDescriptionBlockProps) {
+}: ListItemWithDescriptionBlockProps): ReactNode {
   const theme = useTheme();
 
   return (

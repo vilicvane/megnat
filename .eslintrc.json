@@ -1,0 +1,26 @@
+{
+  "root": true,
+  "ignorePatterns": ["node_modules/", "dist/", "tmp/"],
+  "extends": ["plugin:@mufan/javascript", "plugin:@mufan/react"],
+  "overrides": [
+    {
+      "files": "**/*.{js,mjs}",
+      "parserOptions": {
+        "sourceType": "module"
+      }
+    },
+    {
+      "files": "**/*.cjs",
+      "parserOptions": {
+        "sourceType": "script"
+      }
+    },
+    {
+      "files": ["**/*.{ts,tsx}"],
+      "extends": ["plugin:@mufan/typescript"],
+      "parserOptions": {
+        "project": "tsconfig.json"
+      }
+    }
+  ]
+}

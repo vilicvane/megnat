@@ -1,0 +1,19 @@
+{
+  "$schema": "boilerplate.schema.json",
+  "boilerplate": "@mufan/code-boilerplates/typescript",
+  "options": {
+    "name": "megnat",
+    "author": "vilicvane",
+    "defaultBranch": "master",
+    "packageManager": "pnpm",
+    "type": "module",
+    "projects": [
+      {
+        "name": "app",
+        "src": false,
+        "dir": false,
+        "noEmit": true
+      }
+    ]
+  }
+}

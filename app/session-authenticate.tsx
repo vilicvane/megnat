@@ -1,20 +1,23 @@
+import {buildAuthObject} from '@walletconnect/utils';
 import {router} from 'expo-router';
+import type {ReactNode} from 'react';
 import React, {useEffect, useState} from 'react';
 import {Alert, ScrollView, View} from 'react-native';
 import {Appbar, List} from 'react-native-paper';
-import {buildAuthObject} from '@walletconnect/utils';
 
-import {useEntrances} from '@/entrances';
-import {ListItemWithDescriptionBlock} from '@/components/ui/list-item-with-description-block';
-import {AsyncButton} from '@/components/ui/async-buttons';
 import {
+  AsyncButton,
+  ListItemWithDescriptionBlock,
+} from '../components/ui/index.js';
+import type {Wallet, WalletDerivation} from '../core/index.js';
+import {TangemSigner} from '../core/index.js';
+import {useEntrances} from '../entrances.js';
+import type {
   PendingSessionAuthentication,
   WalletKitService,
-} from '@/services/wallet-kit-service';
-import {Wallet, WalletDerivation} from '@/core/wallet';
-import {TangemSigner} from '@/core/tangem-signer';
+} from '../services/index.js';
 
-export default function SessionAuthenticateScreen() {
+export default function SessionAuthenticateScreen(): ReactNode {
   const {walletKitService, walletStorageService, uiService} = useEntrances();
 
   const [authentication] = useState(() => {
@@ -103,7 +106,7 @@ export default function SessionAuthenticateScreen() {
 async function reject(
   walletKitService: WalletKitService,
   pendingSessionAuthentication: PendingSessionAuthentication,
-) {
+): Promise<void> {
   await walletKitService.rejectSessionAuthentication(
     pendingSessionAuthentication.id,
   );
@@ -116,7 +119,7 @@ async function sign(
   wallet: Wallet,
   walletDerivation: WalletDerivation,
   authentication: PendingSessionAuthentication,
-) {
+): Promise<void> {
   const signer = new TangemSigner(
     undefined,
     wallet.publicKey,

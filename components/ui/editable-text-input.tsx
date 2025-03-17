@@ -1,5 +1,7 @@
+import type {ReactNode} from 'react';
 import {useState} from 'react';
-import {TextInput, TextInputProps} from 'react-native-paper';
+import type {TextInputProps} from 'react-native-paper';
+import {TextInput} from 'react-native-paper';
 
 export type EditableTextInputProps = TextInputProps & {
   initialValue: string;
@@ -14,7 +16,7 @@ export function EditableTextInput({
   handler,
   savingEnabled = false,
   ...props
-}: EditableTextInputProps) {
+}: EditableTextInputProps): ReactNode {
   const [text, setText] = useState(() => {
     onChangeText?.(initialValue);
     return initialValue;
@@ -46,13 +48,11 @@ export function EditableTextInput({
           setSaving(true);
         }
 
-        void handler(text)
-          .catch(console.error)
-          .finally(() => {
-            if (savingEnabled) {
-              setSaving(false);
-            }
-          });
+        void handler(text).finally(() => {
+          if (savingEnabled) {
+            setSaving(false);
+          }
+        });
       }}
     />
   );

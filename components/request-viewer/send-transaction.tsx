@@ -1,26 +1,25 @@
-import React from 'react';
+import type {PendingRequestTypes} from '@walletconnect/types';
+import type {ethers} from 'ethers';
+import {formatEther, toBigInt} from 'ethers';
+import * as Clipboard from 'expo-clipboard';
+import {router} from 'expo-router';
+import {openBrowserAsync} from 'expo-web-browser';
+import type {ReactNode} from 'react';
 import {Alert, ScrollView, View} from 'react-native';
 import {Appbar, List} from 'react-native-paper';
-import {router} from 'expo-router';
-import * as Clipboard from 'expo-clipboard';
-import {openBrowserAsync} from 'expo-web-browser';
-import {ethers, formatEther, toBigInt} from 'ethers';
-import {PendingRequestTypes} from '@walletconnect/types';
 
-import {useEntrances} from '@/entrances';
-import {WalletKitService} from '@/services/wallet-kit-service';
-import {useAsyncValueUpdate} from '@/hooks/miscellaneous';
-import {TangemSigner} from '@/core/tangem-signer';
-import {Wallet, WalletDerivation} from '@/core/wallet';
-import {AsyncButton} from '@/components/ui/async-buttons';
-import {ListItemWithDescriptionBlock} from '@/components/ui/list-item-with-description-block';
-import {ChainService} from '@/services/chain-service';
+import type {Wallet, WalletDerivation} from '../../core/index.js';
+import {TangemSigner} from '../../core/index.js';
+import {useEntrances} from '../../entrances.js';
+import {useAsyncValueUpdate} from '../../hooks/index.js';
+import type {ChainService, WalletKitService} from '../../services/index.js';
+import {AsyncButton, ListItemWithDescriptionBlock} from '../ui/index.js';
 
 export type SendTransactionProps = {
   request: PendingRequestTypes.Struct;
 };
 
-export function SendTransaction({request}: SendTransactionProps) {
+export function SendTransaction({request}: SendTransactionProps): ReactNode {
   const {chainService, walletKitService, walletStorageService} = useEntrances();
 
   const {
@@ -53,7 +52,7 @@ export function SendTransaction({request}: SendTransactionProps) {
   const chainName = chainService.getName(chainId);
   const provider = chainService.getRPC(chainId);
 
-  const [feeData, updateFeeData] = useAsyncValueUpdate(async update => {
+  const [feeData, _updateFeeData] = useAsyncValueUpdate(async update => {
     if (!provider) {
       return undefined;
     }
@@ -163,7 +162,7 @@ export function SendTransaction({request}: SendTransactionProps) {
 async function reject(
   walletKitService: WalletKitService,
   request: PendingRequestTypes.Struct,
-) {
+): Promise<void> {
   await walletKitService.rejectSessionRequest(request);
 
   router.back();
@@ -196,7 +195,7 @@ async function sign(
     maxFeePerGas: bigint | undefined;
     maxPriorityFeePerGas: bigint | undefined;
   },
-) {
+): Promise<void> {
   const signer = new TangemSigner(provider, wallet.publicKey, walletDerivation);
 
   const {hash} = await signer.sendTransaction({
@@ -222,17 +221,14 @@ async function sign(
     [
       {
         text: 'View',
-        onPress: () => {
+        onPress: () =>
           void openBrowserAsync(
             chainService.getExplorerURL(request.params.chainId, hash),
-          ).catch(console.error);
-        },
+          ),
       },
       {
         text: 'Copy',
-        onPress: () => {
-          Clipboard.setStringAsync(hash);
-        },
+        onPress: () => void Clipboard.setStringAsync(hash),
       },
       {
         text: 'OK',

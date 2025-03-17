@@ -1,21 +1,20 @@
-import React from 'react';
+import type {PendingRequestTypes} from '@walletconnect/types';
+import {router} from 'expo-router';
+import type {ReactNode} from 'react';
 import {Alert, ScrollView, View} from 'react-native';
 import {Appbar, List} from 'react-native-paper';
-import {router} from 'expo-router';
-import {PendingRequestTypes} from '@walletconnect/types';
 
-import {useEntrances} from '@/entrances';
-import {WalletKitService} from '@/services/wallet-kit-service';
-import {TangemSigner} from '@/core/tangem-signer';
-import {Wallet, WalletDerivation} from '@/core/wallet';
-import {AsyncButton} from '@/components/ui/async-buttons';
-import {ListItemWithDescriptionBlock} from '@/components/ui/list-item-with-description-block';
+import type {Wallet, WalletDerivation} from '../../core/index.js';
+import {TangemSigner} from '../../core/index.js';
+import {useEntrances} from '../../entrances.js';
+import type {WalletKitService} from '../../services/index.js';
+import {AsyncButton, ListItemWithDescriptionBlock} from '../ui/index.js';
 
 export type SignTypedDataProps = {
   request: PendingRequestTypes.Struct;
 };
 
-export function SignTypedData({request}: SignTypedDataProps) {
+export function SignTypedData({request}: SignTypedDataProps): ReactNode {
   const {chainService, walletKitService, walletStorageService} = useEntrances();
 
   const {
@@ -91,7 +90,7 @@ export function SignTypedData({request}: SignTypedDataProps) {
 async function reject(
   walletKitService: WalletKitService,
   request: PendingRequestTypes.Struct,
-) {
+): Promise<void> {
   await walletKitService.rejectSessionRequest(request);
 
   router.back();
@@ -103,7 +102,7 @@ async function sign(
   walletDerivation: WalletDerivation,
   request: PendingRequestTypes.Struct,
   {domain, types, message}: TypedData,
-) {
+): Promise<void> {
   const signer = new TangemSigner(
     undefined,
     wallet.publicKey,

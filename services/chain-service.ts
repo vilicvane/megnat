@@ -1,12 +1,12 @@
 import {ethers} from 'ethers';
 
-import {Chain} from '@/core/chain';
+import type {Chain} from '../core/index.js';
 
-import {StorageService} from './storage-service';
+import type {StorageService} from './storage-service.js';
 
 const EXPLORER_URL_FALLBACK = 'https://blockscan.com/tx/';
 
-function BUILTIN_RPC_ENDPOINT(chain: string) {
+function BUILTIN_RPC_ENDPOINT(chain: string): string {
   return `https://${chain}.infura.io/v3/a7eb273f0619465ab088062876f728d6`;
 }
 
@@ -58,22 +58,22 @@ export class ChainService {
     );
   }
 
-  getRPC(chainId: string) {
+  getRPC(chainId: string): ethers.JsonRpcProvider | undefined {
     const rpc = this.chainMap.get(chainId)?.rpc;
 
     return rpc ? new ethers.JsonRpcProvider(rpc) : undefined;
   }
 
-  getName(chainId: string) {
+  getName(chainId: string): string {
     return this.chainMap.get(chainId)?.name ?? chainId;
   }
 
-  getExplorerURL(chainId: string, txHash: string) {
+  getExplorerURL(chainId: string, txHash: string): string {
     const url = this.chainMap.get(chainId)?.explorer ?? EXPLORER_URL_FALLBACK;
     return url + txHash;
   }
 
-  static async create(storageService: StorageService) {
+  static async create(storageService: StorageService): Promise<ChainService> {
     const chains = await storageService.get('chains');
 
     return new ChainService(chains ?? []);

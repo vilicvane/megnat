@@ -1,18 +1,22 @@
-import React from 'react';
-import {Appbar, Badge, Button, List, Menu, useTheme} from 'react-native-paper';
-import {Alert, ScrollView, View} from 'react-native';
+/* eslint-disable @mufan/scoped-modules */
+
 import {router} from 'expo-router';
+import type {ReactNode} from 'react';
+import {Alert, ScrollView, View} from 'react-native';
+import {Appbar, Badge, Button, List, Menu, useTheme} from 'react-native-paper';
 
-import {useVisibleOpenClose} from '@/hooks/miscellaneous';
-import {tangem, tangemWalletsToWallets, tangemWalletToWallet} from '@/tangem';
-import {useEntrances} from '@/entrances';
-import {WalletStorageService} from '@/services/wallet-storage-service';
-import {useWalletKitPendingSessionRequests} from '@/services/wallet-kit-service';
-import {useValueUpdate} from '@/hooks/miscellaneous';
-import {NEW_CARD_BACKUP_NEEDED_FOR_ACCESS_CODE_MESSAGE} from '@/constants/texts';
-import {UIService} from '@/services/ui-service';
+import {NEW_CARD_BACKUP_NEEDED_FOR_ACCESS_CODE_MESSAGE} from '../constants/index.js';
+import {useEntrances} from '../entrances.js';
+import {useValueUpdate, useVisibleOpenClose} from '../hooks/index.js';
+import type {UIService, WalletStorageService} from '../services/index.js';
+import {useWalletKitPendingSessionRequests} from '../services/index.js';
+import {
+  tangem,
+  tangemWalletToWallet,
+  tangemWalletsToWallets,
+} from '../tangem.js';
 
-export default function IndexScreen() {
+export default function IndexScreen(): ReactNode {
   const theme = useTheme();
 
   const {walletStorageService, walletKitService, uiService} = useEntrances();
@@ -47,9 +51,7 @@ export default function IndexScreen() {
             onPress={() => {
               menu.close();
 
-              void addWallet(walletStorageService)
-                .catch(console.error)
-                .finally(updateWallets);
+              void addWallet(walletStorageService).finally(updateWallets);
             }}
           />
           <Menu.Item
@@ -58,9 +60,7 @@ export default function IndexScreen() {
             onPress={() => {
               menu.close();
 
-              void createWallet(walletStorageService)
-                .catch(console.error)
-                .finally(updateWallets);
+              void createWallet(walletStorageService).finally(updateWallets);
             }}
           />
           <Menu.Item
@@ -78,7 +78,7 @@ export default function IndexScreen() {
             onPress={() => {
               menu.close();
 
-              void scanCard(uiService).catch(console.error);
+              void scanCard(uiService);
             }}
           />
         </Menu>
@@ -142,10 +142,10 @@ export default function IndexScreen() {
           }}
         >
           {pendingSessionRequests.length > 1
-            ? `View next pending request`
+            ? 'View next pending request'
             : pendingSessionRequests.length > 0
-            ? 'View pending request'
-            : 'No pending requests'}
+              ? 'View pending request'
+              : 'No pending requests'}
         </Button>
         {pendingSessionRequests.length > 1 && (
           <Badge style={{position: 'absolute', top: -8, right: 0}}>
@@ -157,7 +157,9 @@ export default function IndexScreen() {
   );
 }
 
-async function addWallet(walletStorageService: WalletStorageService) {
+async function addWallet(
+  walletStorageService: WalletStorageService,
+): Promise<void> {
   const response = await tangem.scan();
 
   const wallets = tangemWalletsToWallets(response.wallets);
@@ -170,7 +172,9 @@ async function addWallet(walletStorageService: WalletStorageService) {
   await walletStorageService.addWallets(wallets);
 }
 
-async function createWallet(walletStorageService: WalletStorageService) {
+async function createWallet(
+  walletStorageService: WalletStorageService,
+): Promise<void> {
   const {cardId, wallet} = await tangem.createWallet({});
 
   await walletStorageService.addWallet(tangemWalletToWallet(wallet)!);
@@ -184,7 +188,7 @@ async function createWallet(walletStorageService: WalletStorageService) {
   Alert.alert('Success', message);
 }
 
-async function scanCard(uiService: UIService) {
+async function scanCard(uiService: UIService): Promise<void> {
   const card = await tangem.scan();
 
   uiService.state.card = card;

@@ -1,16 +1,17 @@
-import {
-  Button,
-  ButtonProps,
-  IconButton,
-  IconButtonProps,
-} from 'react-native-paper';
+import type {ReactNode} from 'react';
 import {useState} from 'react';
+import type {ButtonProps, IconButtonProps} from 'react-native-paper';
+import {Button, IconButton} from 'react-native-paper';
 
 export type AsyncButtonProps = ButtonProps & {
   handler: () => Promise<void>;
 };
 
-export function AsyncButton({disabled, handler, ...props}: AsyncButtonProps) {
+export function AsyncButton({
+  disabled,
+  handler,
+  ...props
+}: AsyncButtonProps): ReactNode {
   const [loading, setLoading] = useState(false);
 
   return (
@@ -21,9 +22,7 @@ export function AsyncButton({disabled, handler, ...props}: AsyncButtonProps) {
       onPress={() => {
         setLoading(true);
 
-        void handler()
-          .catch(console.error)
-          .finally(() => setLoading(false));
+        void handler().finally(() => setLoading(false));
       }}
     />
   );
@@ -37,7 +36,7 @@ export function AsyncIconButton({
   disabled,
   handler,
   ...props
-}: AsyncIconButtonProps) {
+}: AsyncIconButtonProps): ReactNode {
   const [loading, setLoading] = useState(false);
 
   return (
@@ -48,9 +47,7 @@ export function AsyncIconButton({
       onPress={() => {
         setLoading(true);
 
-        void handler()
-          .catch(console.error)
-          .finally(() => setLoading(false));
+        void handler().finally(() => setLoading(false));
       }}
     />
   );

@@ -1,7 +1,11 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
+# General
+.DS_Store
+*.tgz
 node_modules/
+
+# TypeScript Build Artifacts
+.bld/
+*.tsbuildinfo
 
 # Expo
 .expo/
@@ -15,27 +19,15 @@ expo-env.d.ts
 *.p8
 *.p12
 *.key
+*.pem
 *.mobileprovision
 
 # Metro
 .metro-health-check*
 
-# debug
+# Debugging
 npm-debug.*
 yarn-debug.*
 yarn-error.*
-
-# macOS
-.DS_Store
-*.pem
-
-# local env files
 .env*.local
-
-# typescript
-*.tsbuildinfo
-
-app-example
-
-# temporary files
 /tmp/

@@ -1,15 +1,16 @@
+import type {WalletKitTypes} from '@reown/walletkit';
 import {router, useLocalSearchParams} from 'expo-router';
+import type {ReactNode} from 'react';
 import React, {useEffect, useState} from 'react';
-
-import {useEntrances} from '@/entrances';
-import {SendTransaction} from '@/components/request-viewer/send-transaction';
 import {Alert} from 'react-native';
-import {WalletKitTypes} from '@reown/walletkit';
-import {RPC_METHOD_DISPLAY_NAME} from '@/core/chain';
-import {SignTypedData} from '@/components/request-viewer/sign-typed-data';
-import {SignMessage} from '@/components/request-viewer/sign-message';
 
-export default function ViewRequestScreen() {
+import {SendTransaction} from '../components/request-viewer/send-transaction.js';
+import {SignMessage} from '../components/request-viewer/sign-message.js';
+import {SignTypedData} from '../components/request-viewer/sign-typed-data.js';
+import {RPC_METHOD_DISPLAY_NAME} from '../core/index.js';
+import {useEntrances} from '../entrances.js';
+
+export default function ViewRequestScreen(): ReactNode {
   const {walletKitService} = useEntrances();
 
   const {requestId: requestIdString} = useLocalSearchParams<{
@@ -27,9 +28,9 @@ export default function ViewRequestScreen() {
       return;
     }
 
-    const callback = (
+    function callback(
       event: WalletKitTypes.EventArguments['session_request_expire'],
-    ) => {
+    ): void {
       if (requestId !== event.id) {
         return;
       }
@@ -44,14 +45,16 @@ export default function ViewRequestScreen() {
         'Request expired',
         `The ${method} request has expired thus is no longer available to sign.`,
       );
-    };
+    }
 
-    walletKitService.walletKit.on('session_request_expire', callback);
+    const walletKit = walletKitService.walletKit;
+
+    walletKit.on('session_request_expire', callback);
 
     return () => {
-      walletKitService.walletKit.off('session_request_expire', callback);
+      walletKit.off('session_request_expire', callback);
     };
-  }, [request, requestId]);
+  }, [request, requestId, walletKitService.walletKit]);
 
   if (!request) {
     return null;

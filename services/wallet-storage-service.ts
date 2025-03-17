@@ -1,13 +1,16 @@
 import {ethers} from 'ethers';
 
-import {Wallet, WalletDerivation} from '@/core/wallet';
+import type {Wallet, WalletDerivation} from '../core/index.js';
 
-import {StorageService} from './storage-service';
+import type {StorageService} from './storage-service.js';
 
 export class WalletStorageService {
-  constructor(private storage: StorageService, private wallets: Wallet[]) {}
+  constructor(
+    private storage: StorageService,
+    private wallets: Wallet[],
+  ) {}
 
-  async addWallets(newWallets: Wallet[]) {
+  async addWallets(newWallets: Wallet[]): Promise<void> {
     const existingPublicKeySet = new Set(
       this.wallets.map(wallet => wallet.publicKey),
     );
@@ -23,11 +26,11 @@ export class WalletStorageService {
     await this.storage.set('wallets', this.wallets);
   }
 
-  async addWallet(wallet: Wallet) {
+  async addWallet(wallet: Wallet): Promise<void> {
     await this.addWallets([wallet]);
   }
 
-  async removeWallet(publicKey: string) {
+  async removeWallet(publicKey: string): Promise<void> {
     const index = this.wallets.findIndex(
       wallet => wallet.publicKey === publicKey,
     );
@@ -41,15 +44,15 @@ export class WalletStorageService {
     await this.storage.set('wallets', this.wallets);
   }
 
-  getWallets() {
+  getWallets(): Wallet[] {
     return [...this.wallets];
   }
 
-  getWalletByWalletPublicKey(publicKey: string) {
+  getWalletByWalletPublicKey(publicKey: string): Wallet | undefined {
     return this.wallets.find(wallet => wallet.publicKey === publicKey);
   }
 
-  requireWalletByWalletPublicKey(publicKey: string) {
+  requireWalletByWalletPublicKey(publicKey: string): Wallet {
     const wallet = this.getWalletByWalletPublicKey(publicKey);
 
     if (!wallet) {
@@ -59,7 +62,9 @@ export class WalletStorageService {
     return wallet;
   }
 
-  getWalletByAddress(address: string) {
+  getWalletByAddress(
+    address: string,
+  ): {wallet: Wallet; derivation: WalletDerivation} | undefined {
     address = ethers.getAddress(address);
 
     for (const wallet of this.wallets) {
@@ -73,7 +78,7 @@ export class WalletStorageService {
     return undefined;
   }
 
-  async renameWallet(walletPublicKey: string, name: string) {
+  async renameWallet(walletPublicKey: string, name: string): Promise<void> {
     const wallet = this.requireWalletByWalletPublicKey(walletPublicKey);
 
     wallet.name = name;
@@ -93,8 +98,8 @@ export class WalletStorageService {
     }
 
     const derivation = {
-      path: path,
-      address: ethers.computeAddress('0x' + publicKey),
+      path,
+      address: ethers.computeAddress(`0x${publicKey}`),
       publicKey,
     };
 
@@ -105,7 +110,7 @@ export class WalletStorageService {
     return derivation;
   }
 
-  async removeDerivation(walletPublicKey: string, path: string) {
+  async removeDerivation(walletPublicKey: string, path: string): Promise<void> {
     const wallet = this.requireWalletByWalletPublicKey(walletPublicKey);
 
     const index = wallet.derivations.findIndex(
@@ -121,7 +126,7 @@ export class WalletStorageService {
     await this.storage.set('wallets', this.wallets);
   }
 
-  static async create(storage: StorageService) {
+  static async create(storage: StorageService): Promise<WalletStorageService> {
     const wallets = await storage.get('wallets');
 
     return new WalletStorageService(storage, wallets ?? []);

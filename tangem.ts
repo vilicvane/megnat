@@ -1,6 +1,7 @@
 import {ethers} from 'ethers';
 import {NativeModules} from 'react-native';
-import {Wallet} from './core/wallet';
+
+import type {Wallet} from './core/index.js';
 
 export const tangem = NativeModules.TangemModule as TangemModule;
 
@@ -78,6 +79,8 @@ export type TangemWallet = {
 
 export const DERIVATION_PATH_DEFAULT = "m/44'/60'/0'/0/0";
 
+export const DERIVATION_PATH_PATTERN = /^m\/44'\/\d+'\/\d+'\/\d+\/\d+$/;
+
 export function tangemWalletToWallet({
   curve,
   publicKey,
@@ -88,7 +91,7 @@ export function tangemWalletToWallet({
     return undefined;
   }
 
-  let chainCode = /^0+$/.test(originalChainCode)
+  const chainCode = /^0+$/.test(originalChainCode)
     ? undefined
     : originalChainCode;
 
@@ -96,7 +99,7 @@ export function tangemWalletToWallet({
     ? [DERIVATION_PATH_DEFAULT, derivedKeys[DERIVATION_PATH_DEFAULT].publicKey]
     : [undefined, publicKey];
 
-  const address = ethers.computeAddress('0x' + addressPublicKey);
+  const address = ethers.computeAddress(`0x${addressPublicKey}`);
 
   return {
     name: address.slice(0, 8).toLowerCase(),

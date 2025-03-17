@@ -1,11 +1,13 @@
-import {createEntrances, EntrancesContext} from '@/entrances';
-import {useAsyncValue} from '@/hooks/miscellaneous';
 import {Slot, SplashScreen} from 'expo-router';
+import type {ReactNode} from 'react';
 import React, {useEffect} from 'react';
 import {StatusBar, View} from 'react-native';
 import {MD3DarkTheme, PaperProvider} from 'react-native-paper';
 
-export default function RootLayout() {
+import {EntrancesContext, createEntrances} from '../entrances.js';
+import {useAsyncValue} from '../hooks/index.js';
+
+export default function RootLayout(): ReactNode {
   const entrances = useAsyncValue(async () =>
     createEntrances({
       walletKit: {
@@ -16,7 +18,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (entrances) {
-      SplashScreen.hideAsync();
+      void SplashScreen.hideAsync();
     }
   }, [entrances]);
 

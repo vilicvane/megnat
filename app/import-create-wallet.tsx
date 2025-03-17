@@ -1,22 +1,23 @@
-import {Appbar, TextInput} from 'react-native-paper';
 import {router} from 'expo-router';
+import type {ReactNode} from 'react';
 import React, {useState} from 'react';
 import {Alert, ScrollView, View} from 'react-native';
+import {Appbar, TextInput} from 'react-native-paper';
 
-import {WalletStorageService} from '@/services/wallet-storage-service';
-import {tangem, tangemWalletToWallet} from '@/tangem';
-import {useEntrances} from '@/entrances';
 import {
   QRCodeInputModal,
   useQRCodeInputModalProps,
-} from '@/components/qrcode-input-modal';
-import {NEW_CARD_BACKUP_NEEDED_FOR_ACCESS_CODE_MESSAGE} from '@/constants/texts';
-import {AsyncButton} from '@/components/ui/async-buttons';
+} from '../components/qrcode-input-modal.js';
+import {AsyncButton} from '../components/ui/index.js';
+import {NEW_CARD_BACKUP_NEEDED_FOR_ACCESS_CODE_MESSAGE} from '../constants/index.js';
+import {useEntrances} from '../entrances.js';
+import type {WalletStorageService} from '../services/index.js';
+import {tangem, tangemWalletToWallet} from '../tangem.js';
 
 const SECRET_PATTERN =
   /^\s*(?:([\da-f]{64})|([a-z]+(?:\s+[a-z]+){11}(?:(?:\s+[a-z]+){3}){0,4}))\s*$/i;
 
-export default function ImportCreateWalletScreen() {
+export default function ImportCreateWalletScreen(): ReactNode {
   const {walletStorageService} = useEntrances();
 
   const [secret, setSecret] = useState('');
@@ -82,7 +83,7 @@ async function importWallet(
     privateKey,
     mnemonic,
   }: {privateKey: string | undefined; mnemonic: string | undefined},
-) {
+): Promise<void> {
   if (!privateKey && !mnemonic) {
     throw new Error('Either private key or mnemonic phrase is required.');
   }

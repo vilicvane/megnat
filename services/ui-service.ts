@@ -1,7 +1,7 @@
-import {Wallet} from '@/core/wallet';
+import type {Wallet} from '../core/index.js';
+import type {TangemScanResponse} from '../tangem.js';
 
-import {PendingSessionAuthentication} from './wallet-kit-service';
-import {TangemScanResponse} from '@/tangem';
+import type {PendingSessionAuthentication} from './wallet-kit-service.js';
 
 export class UIService {
   readonly state = {

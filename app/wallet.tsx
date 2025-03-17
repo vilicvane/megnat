@@ -1,20 +1,26 @@
 import {router, useLocalSearchParams} from 'expo-router';
+import type {ReactNode} from 'react';
 import React, {useRef, useState} from 'react';
 import {Alert, ScrollView, View} from 'react-native';
 import {Appbar, List, Menu, useTheme} from 'react-native-paper';
 
-import {confirm} from '@/components/ui/confirm';
-import {useEntrances} from '@/entrances';
-import {useRefresh, useVisibleOpenClose} from '@/hooks/miscellaneous';
-import {WalletStorageService} from '@/services/wallet-storage-service';
-import {DERIVATION_PATH_DEFAULT, tangem} from '@/tangem';
-import {EditableTextInput} from '@/components/ui/editable-text-input';
-import {AsyncButton, AsyncIconButton} from '@/components/ui/async-buttons';
-import {Wallet} from '@/core/wallet';
+import {
+  AsyncButton,
+  AsyncIconButton,
+  EditableTextInput,
+  confirm,
+} from '../components/ui/index.js';
+import type {Wallet} from '../core/index.js';
+import {useEntrances} from '../entrances.js';
+import {useRefresh, useVisibleOpenClose} from '../hooks/index.js';
+import type {WalletStorageService} from '../services/index.js';
+import {
+  DERIVATION_PATH_DEFAULT,
+  DERIVATION_PATH_PATTERN,
+  tangem,
+} from '../tangem.js';
 
-const DERIVATION_PATH_PATTERN = /^m\/44'\/\d+'\/\d+'\/\d+\/\d+$/;
-
-export default function WalletScreen() {
+export default function WalletScreen(): ReactNode {
   const {walletPublicKey} = useLocalSearchParams<{walletPublicKey: string}>();
 
   const theme = useTheme();
@@ -154,7 +160,7 @@ async function addDerivation(
   walletStorageService: WalletStorageService,
   wallet: Wallet,
   derivationPath: string,
-) {
+): Promise<void> {
   if (!DERIVATION_PATH_PATTERN.test(derivationPath)) {
     Alert.alert(
       'Invalid derivation path',
@@ -196,7 +202,7 @@ async function removeDerivation(
   walletStorageService: WalletStorageService,
   wallet: Wallet,
   derivationPath: string,
-) {
+): Promise<void> {
   if (
     !(await confirm(
       'Remove derivation',
@@ -215,7 +221,7 @@ async function removeDerivation(
 async function forgetWallet(
   walletStorageService: WalletStorageService,
   wallet: Wallet,
-) {
+): Promise<void> {
   if (
     !(await confirm(
       'Forget wallet',

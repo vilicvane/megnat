@@ -5,7 +5,7 @@ export type Chain = {
   explorer: string;
 };
 
-export function RPC_METHOD_DISPLAY_NAME(method: string) {
+export function RPC_METHOD_DISPLAY_NAME(method: string): string {
   switch (method) {
     case 'eth_sendTransaction':
       return 'Send transaction';

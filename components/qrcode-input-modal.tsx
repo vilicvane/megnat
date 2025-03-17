@@ -1,4 +1,5 @@
 import {CameraView} from 'expo-camera';
+import type {ReactNode} from 'react';
 import {useState} from 'react';
 import {useWindowDimensions} from 'react-native';
 import {Modal, Portal} from 'react-native-paper';
@@ -15,7 +16,7 @@ export function QRCodeInputModal({
   filter,
   onDismiss,
   onQRCodeScanned,
-}: QRCodeInputModalProps) {
+}: QRCodeInputModalProps): ReactNode {
   const {width, height} = useWindowDimensions();
 
   const cameraSize = Math.min(width, height) * 0.8;
@@ -48,7 +49,10 @@ export function QRCodeInputModal({
   );
 }
 
-export function useQRCodeInputModalProps() {
+export function useQRCodeInputModalProps(): [
+  QRCodeInputModalProps,
+  (pattern?: RegExp) => Promise<string | undefined>,
+] {
   const [{visible}, setState] = useState(() => {
     return {
       visible: false,
@@ -91,7 +95,7 @@ export function useQRCodeInputModalProps() {
         });
       },
     },
-    async (pattern?: RegExp) => {
+    async pattern => {
       return new Promise<string | undefined>(resolve => {
         setState({
           visible: true,
@@ -100,5 +104,5 @@ export function useQRCodeInputModalProps() {
         });
       });
     },
-  ] as const;
+  ];
 }

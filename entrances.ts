@@ -1,10 +1,12 @@
 import {createContext, useContext} from 'react';
 
-import {ChainService} from './services/chain-service';
-import {StorageService} from './services/storage-service';
-import {WalletKitService} from './services/wallet-kit-service';
-import {WalletStorageService} from './services/wallet-storage-service';
-import {UIService} from './services/ui-service';
+import {
+  ChainService,
+  StorageService,
+  UIService,
+  WalletKitService,
+  WalletStorageService,
+} from './services/index.js';
 
 export type EntrancesOptions = {
   walletKit: {
@@ -12,6 +14,7 @@ export type EntrancesOptions = {
   };
 };
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export async function createEntrances({
   walletKit: walletKitOptions,
 }: EntrancesOptions) {
@@ -30,6 +33,7 @@ export const EntrancesContext = createContext<
   Awaited<ReturnType<typeof createEntrances>>
 >(undefined!);
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function useEntrances() {
   const entrances = useContext(EntrancesContext);
 

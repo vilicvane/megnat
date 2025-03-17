@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import {Chain} from '@/core/chain';
-import {Wallet} from '@/core/wallet';
+import type {Chain, Wallet} from '../core/index.js';
 
 export class StorageService {
   async get<TKey extends keyof Mapping>(
@@ -11,7 +10,10 @@ export class StorageService {
     return value ? JSON.parse(value) : undefined;
   }
 
-  async set<TKey extends keyof Mapping>(key: TKey, value: Mapping[TKey]) {
+  async set<TKey extends keyof Mapping>(
+    key: TKey,
+    value: Mapping[TKey],
+  ): Promise<void> {
     await AsyncStorage.setItem(key, JSON.stringify(value));
   }
 }

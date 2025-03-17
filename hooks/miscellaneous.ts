@@ -1,64 +1,72 @@
-import {useCallback, useEffect, useState} from 'react';
+import type {EffectCallback} from 'react';
+import {useEffect, useState} from 'react';
+import useEvent from 'react-use-event-hook';
 
-export function useAsyncValue<T>(initializer: () => Promise<T>) {
+export function useMountEffect(callback: EffectCallback): void {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(callback, []);
+}
+
+export function useAsyncValue<T>(initializer: () => Promise<T>): T | undefined {
   const [state, setState] = useState<T>();
 
-  useEffect(() => {
-    initializer().then(setState);
-  }, []);
+  useMountEffect(() => void initializer().then(setState));
 
   return state;
 }
 
 export function useAsyncValueUpdate<T>(
   callback: (update: boolean) => Promise<T>,
-) {
+): [T | undefined, () => void] {
   const [state, setState] = useState<T>();
 
-  const update = useCallback(() => {
-    callback(true).then(setState).catch(console.error);
-  }, [callback]);
+  const update = useEvent(() => {
+    void callback(true).then(setState);
+  });
 
-  useEffect(() => {
-    callback(false).then(setState).catch(console.error);
-  }, []);
+  useMountEffect(() => void callback(false).then(setState));
 
-  return [state, update] as const;
+  return [state, update];
 }
 
-export function useValueUpdate<T>(callback: (update: boolean) => T) {
+export function useValueUpdate<T>(
+  callback: (update: boolean) => T,
+): [T | undefined, () => void] {
   const [state, setState] = useState<T>();
 
-  const update = useCallback(() => {
-    setState(callback(true));
-  }, [callback]);
+  const update = useEvent(() => setState(callback(true)));
 
-  useEffect(() => {
-    setState(callback(false));
-  }, []);
+  useMountEffect(() => setState(callback(false)));
 
-  return [state, update] as const;
+  return [state, update];
 }
 
-export function useRefresh() {
+export function useRefresh(): () => void {
   const [, setRefresh] = useState(0);
 
-  return useCallback(() => setRefresh(count => count + 1), [setRefresh]);
+  return useEvent(() => setRefresh(count => count + 1));
 }
 
-export function useToggle(initialValue: boolean) {
+export function useToggle(initialValue: boolean): {
+  value: boolean;
+  toggle: () => void;
+} {
   const [value, setValue] = useState(initialValue);
 
-  const toggle = () => setValue(value => !value);
+  const toggle = useEvent(() => setValue(value => !value));
 
   return {value, toggle};
 }
 
-export function useVisibleOpenClose() {
+export function useVisibleOpenClose(): {
+  visible: boolean;
+  open: () => void;
+  close: () => void;
+} {
   const [visible, setVisible] = useState(false);
 
-  const open = () => setVisible(true);
-  const close = () => setVisible(false);
+  const open = useEvent(() => setVisible(true));
+  const close = useEvent(() => setVisible(false));
 
   return {visible, open, close};
 }

@@ -1,21 +1,21 @@
 import '@walletconnect/react-native-compat';
 
-import {useEffect} from 'react';
+import WalletKit from '@reown/walletkit';
 import {Core} from '@walletconnect/core';
-import {
+import type {
   AuthTypes,
   PendingRequestTypes,
   SessionTypes,
   SignClientTypes,
 } from '@walletconnect/types';
-import WalletKit from '@reown/walletkit';
 import {
   buildApprovedNamespaces,
   getSdkError,
   populateAuthPayload,
 } from '@walletconnect/utils';
+import {useEffect} from 'react';
 
-import {useRefresh} from '@/hooks/miscellaneous';
+import {useRefresh} from '../hooks/index.js';
 
 const SUPPORTED_METHODS = [
   'eth_sendTransaction',
@@ -36,7 +36,7 @@ export class WalletKitService {
 
   private constructor(readonly walletKit: WalletKit) {
     walletKit.on('session_proposal', event => {
-      console.log('session_proposal', event);
+      console.info('session_proposal', event);
 
       const pendingSession = this.pendingSession;
 
@@ -52,7 +52,7 @@ export class WalletKitService {
     });
 
     walletKit.on('session_authenticate', event => {
-      console.log('session_authenticate', event);
+      console.info('session_authenticate', event);
 
       const pendingSession = this.pendingSession;
 
@@ -68,15 +68,13 @@ export class WalletKitService {
     });
 
     walletKit.on('session_request', event => {
-      console.log('session_request', event);
+      console.info('session_request', event);
 
       this.emitPendingSessionRequestUpdate();
 
-      void walletKit
-        .extendSession({
-          topic: event.topic,
-        })
-        .catch(console.error);
+      void walletKit.extendSession({
+        topic: event.topic,
+      });
     });
 
     walletKit.engine.signClient.events
@@ -102,7 +100,7 @@ export class WalletKitService {
     return promise;
   }
 
-  async disconnect(topic: string) {
+  async disconnect(topic: string): Promise<void> {
     await this.walletKit.disconnectSession({
       topic,
       reason: getSdkError('USER_DISCONNECTED'),
@@ -111,13 +109,16 @@ export class WalletKitService {
     this.emitSessionUpdate();
   }
 
-  getPendingSessionRequest(id: number) {
+  getPendingSessionRequest(id: number): PendingRequestTypes.Struct | undefined {
     return this.walletKit
       .getPendingSessionRequests()
       .find(request => request.id === id);
   }
 
-  async completeSessionAuthentication(id: number, auth: AuthTypes.Cacao) {
+  async completeSessionAuthentication(
+    id: number,
+    auth: AuthTypes.Cacao,
+  ): Promise<void> {
     await this.walletKit.approveSessionAuthenticate({
       id,
       auths: [auth],
@@ -126,14 +127,17 @@ export class WalletKitService {
     this.emitSessionUpdate();
   }
 
-  async rejectSessionAuthentication(id: number) {
+  async rejectSessionAuthentication(id: number): Promise<void> {
     await this.walletKit.rejectSessionAuthenticate({
       id,
       reason: getSdkError('USER_REJECTED'),
     });
   }
 
-  async rejectSessionRequest({topic, id}: PendingRequestTypes.Struct) {
+  async rejectSessionRequest({
+    topic,
+    id,
+  }: PendingRequestTypes.Struct): Promise<void> {
     await this.walletKit.respondSessionRequest({
       topic,
       response: {
@@ -149,7 +153,7 @@ export class WalletKitService {
   async completeSessionRequest(
     request: PendingRequestTypes.Struct,
     result: string,
-  ) {
+  ): Promise<void> {
     await this.walletKit.respondSessionRequest({
       topic: request.topic,
       response: {
@@ -165,14 +169,14 @@ export class WalletKitService {
   private async handleSessionProposal(
     {id, params}: SignClientTypes.EventArguments['session_proposal'],
     address: string,
-  ) {
+  ): Promise<void> {
     const chains = [
       ...(params.requiredNamespaces.eip155?.chains ?? []),
       ...(params.optionalNamespaces.eip155?.chains ?? []),
     ];
 
     if (chains.length === 0) {
-      this.walletKit.rejectSession({
+      await this.walletKit.rejectSession({
         id,
         reason: getSdkError('UNSUPPORTED_CHAINS'),
       });
@@ -208,7 +212,7 @@ export class WalletKitService {
     );
 
     if (chains.length === 0) {
-      this.walletKit.rejectSessionAuthenticate({
+      await this.walletKit.rejectSessionAuthenticate({
         id,
         reason: getSdkError('UNSUPPORTED_CHAINS'),
       });
@@ -240,7 +244,7 @@ export class WalletKitService {
 
   private sessionUpdateCallbackSet = new Set<() => void>();
 
-  onSessionUpdate(callback: () => void) {
+  onSessionUpdate(callback: () => void): () => void {
     this.sessionUpdateCallbackSet.add(callback);
 
     return () => {
@@ -248,13 +252,13 @@ export class WalletKitService {
     };
   }
 
-  emitSessionUpdate() {
+  emitSessionUpdate(): void {
     this.sessionUpdateCallbackSet.forEach(callback => callback());
   }
 
   private pendingSessionRequestCallbackSet = new Set<() => void>();
 
-  onPendingSessionRequest(callback: () => void) {
+  onPendingSessionRequest(callback: () => void): () => void {
     this.pendingSessionRequestCallbackSet.add(callback);
 
     return () => {
@@ -262,11 +266,11 @@ export class WalletKitService {
     };
   }
 
-  emitPendingSessionRequestUpdate() {
+  emitPendingSessionRequestUpdate(): void {
     this.pendingSessionRequestCallbackSet.forEach(callback => callback());
   }
 
-  static async create(projectId: string) {
+  static async create(projectId: string): Promise<WalletKitService> {
     const walletKit = await WalletKit.init({
       core: new Core({
         projectId,
@@ -294,7 +298,7 @@ export type PendingSessionAuthentication = {
 export function useWalletKitSessions(
   service: WalletKitService,
   address?: string,
-) {
+): SessionTypes.Struct[] {
   const refresh = useRefresh();
 
   useEffect(() => service.onSessionUpdate(refresh), [refresh, service]);
@@ -321,7 +325,7 @@ export function useWalletKitPendingSessionRequests(
 
   useEffect(() => service.onPendingSessionRequest(refresh), [refresh, service]);
 
-  let topicToSessionDict = service.walletKit.getActiveSessions();
+  const topicToSessionDict = service.walletKit.getActiveSessions();
 
   let requests = service.walletKit.getPendingSessionRequests().map(request => {
     return {
