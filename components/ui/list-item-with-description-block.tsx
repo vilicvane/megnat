@@ -20,6 +20,7 @@ export function ListItemWithDescriptionBlock({
         <View
           style={{
             padding: 8,
+            width: '100%',
             backgroundColor: theme.colors.elevation.level1,
             borderRadius: 4,
           }}

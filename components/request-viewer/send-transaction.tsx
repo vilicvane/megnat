@@ -13,6 +13,7 @@ import {TangemSigner} from '../../core/index.js';
 import {useEntrances} from '../../entrances.js';
 import {useAsyncValueUpdate} from '../../hooks/index.js';
 import type {ChainService, WalletKitService} from '../../services/index.js';
+import {eip155ChainIdToBigInt} from '../../utils/index.js';
 import {AsyncButton, ListItemWithDescriptionBlock} from '../ui/index.js';
 
 export type SendTransactionProps = {
@@ -29,7 +30,7 @@ export function SendTransaction({request}: SendTransactionProps): ReactNode {
     },
   } = request;
 
-  const ethersChainId = toBigInt(chainId.split(':')[1]);
+  const eip155ChainId = eip155ChainIdToBigInt(chainId);
 
   const [
     {from, to, data, value, nonce, gas: gasLimitHex, ...suggestedFeeData},
@@ -49,7 +50,7 @@ export function SendTransaction({request}: SendTransactionProps): ReactNode {
 
   const wallet = walletStorageService.getWalletByAddress(from);
 
-  const chainName = chainService.getName(chainId);
+  const chainName = chainService.getNetworkText(chainId);
   const provider = chainService.getRPC(chainId);
 
   const [feeData, _updateFeeData] = useAsyncValueUpdate(async update => {
@@ -99,7 +100,9 @@ export function SendTransaction({request}: SendTransactionProps): ReactNode {
           <List.Item title="Chain" description={chainName} />
           <List.Item title="From" description={from} />
           <List.Item title="To" description={to} />
-          <ListItemWithDescriptionBlock title="Data" description={data} />
+          {data && (
+            <ListItemWithDescriptionBlock title="Data" description={data} />
+          )}
           <List.Item title="Gas limit" description={gasLimit.toString()} />
           <List.Item title="Max gas fee" description={maxGasText} />
           {estimatedGasFeeText && (
@@ -136,7 +139,7 @@ export function SendTransaction({request}: SendTransactionProps): ReactNode {
                 wallet!.derivation,
                 provider!,
                 request,
-                ethersChainId,
+                eip155ChainId,
                 {
                   to,
                   data,

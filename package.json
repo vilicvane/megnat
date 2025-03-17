@@ -48,6 +48,7 @@
     "react-native-gesture-handler": "^2.24.0",
     "react-native-get-random-values": "^1.11.0",
     "react-native-paper": "^5.13.1",
+    "react-native-promise-rejection-utils": "^0.0.1",
     "react-native-reanimated": "^3.17.1",
     "react-native-safe-area-context": "^5.3.0",
     "react-native-screens": "^4.9.2",

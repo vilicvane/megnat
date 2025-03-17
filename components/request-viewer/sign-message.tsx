@@ -43,7 +43,7 @@ export function SignMessage({request}: SignMessageProps): ReactNode {
 
   const wallet = walletStorageService.getWalletByAddress(address);
 
-  const chainName = chainService.getName(chainId);
+  const chainName = chainService.getNetworkText(chainId);
 
   const signDisabled = !wallet;
 

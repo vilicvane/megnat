@@ -21,4 +21,17 @@ export class StorageService {
 type Mapping = {
   wallets: Wallet[];
   chains: Chain[];
+  infura: InfuraStorageData;
+};
+
+export type InfuraStorageData = {
+  key: string;
+  chains: InfuraChainStorageData[];
+};
+
+export type InfuraChainStorageData = {
+  name: string;
+  subdomain: string;
+  /** bigint as string */
+  id: string;
 };

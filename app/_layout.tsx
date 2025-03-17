@@ -1,11 +1,18 @@
 import {Slot, SplashScreen} from 'expo-router';
 import type {ReactNode} from 'react';
 import React, {useEffect} from 'react';
-import {StatusBar, View} from 'react-native';
+import {LogBox, StatusBar, View} from 'react-native';
 import {MD3DarkTheme, PaperProvider} from 'react-native-paper';
+import {setUnhandledPromiseRejectionTracker} from 'react-native-promise-rejection-utils';
 
 import {EntrancesContext, createEntrances} from '../entrances.js';
 import {useAsyncValue} from '../hooks/index.js';
+
+LogBox.ignoreAllLogs();
+
+setUnhandledPromiseRejectionTracker((_id, error) => {
+  console.error(error);
+});
 
 export default function RootLayout(): ReactNode {
   const entrances = useAsyncValue(async () =>
