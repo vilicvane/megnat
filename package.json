@@ -6,7 +6,7 @@
   "author": "vilicvane",
   "type": "module",
   "scripts": {
-    "3": "pnpm install && pnpm dedupe && pnpm install",
+    "3": "npm install && npm dedupe && npm install",
     "build": "rimraf ./.bld && tsc --build",
     "lint": "eslint --no-error-on-unmatched-pattern --report-unused-disable-directives . && run-in-every eslint-project --parallel --echo -- eslint --no-error-on-unmatched-pattern --report-unused-disable-directives .",
     "lint-prettier": "prettier --check .",
@@ -65,6 +65,6 @@
     "prettier": "^3.5.3",
     "rimraf": "^5.0.10",
     "run-in-every": "^0.2.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.8.2"
   }
 }
