@@ -45,7 +45,8 @@ export default function IndexScreen(): ReactNode {
   const pendingSessionRequests =
     useWalletKitPendingSessionRequests(walletKitService);
 
-  const menu = useVisibleOpenClose();
+  const addMenu = useVisibleOpenClose();
+  const settingsMenu = useVisibleOpenClose();
 
   return (
     <>
@@ -74,42 +75,57 @@ export default function IndexScreen(): ReactNode {
           }
         />
         <Menu
-          visible={menu.visible}
-          onDismiss={menu.close}
-          anchor={<Appbar.Action icon="plus" onPress={menu.open} />}
+          visible={addMenu.visible}
+          onDismiss={addMenu.close}
+          anchor={<Appbar.Action icon="plus" onPress={addMenu.open} />}
         >
           <Menu.Item
             title="Add wallet"
-            leadingIcon="nfc-tap"
+            leadingIcon="cellphone-key"
             onPress={() => {
-              menu.close();
+              addMenu.close();
 
               void addWallet(walletStorageService);
             }}
           />
           <Menu.Item
-            title="Create wallet"
-            leadingIcon="key-wireless"
+            title="Create wallet on card"
+            leadingIcon="card-plus"
             onPress={() => {
-              menu.close();
+              addMenu.close();
 
               void createWallet(walletStorageService);
             }}
           />
           <Menu.Item
-            title="Import & create wallet"
-            leadingIcon="key-wireless"
+            title="Import wallet to card"
+            leadingIcon="card-plus-outline"
             onPress={() => {
-              menu.close();
+              addMenu.close();
 
-              router.push('/import-create-wallet');
+              router.push('/import-wallet');
+            }}
+          />
+        </Menu>
+        <Menu
+          visible={settingsMenu.visible}
+          onDismiss={settingsMenu.close}
+          anchor={
+            <Appbar.Action icon="cog-outline" onPress={settingsMenu.open} />
+          }
+        >
+          <Menu.Item
+            title="Chain settings"
+            leadingIcon="web"
+            onPress={() => {
+              settingsMenu.close();
             }}
           />
           <Menu.Item
             title="Card settings"
-            leadingIcon="credit-card-wireless"
+            leadingIcon="credit-card-chip-outline"
             onPress={() => {
-              menu.close();
+              settingsMenu.close();
 
               void scanCard(uiService);
             }}

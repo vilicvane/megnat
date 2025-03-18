@@ -17,7 +17,7 @@ import {tangem, tangemWalletToWallet} from '../tangem.js';
 const SECRET_PATTERN =
   /^\s*(?:([\da-f]{64})|([a-z]+(?:\s+[a-z]+){11}(?:(?:\s+[a-z]+){3}){0,4}))\s*$/i;
 
-export default function ImportCreateWalletScreen(): ReactNode {
+export default function ImportWalletScreen(): ReactNode {
   const {walletStorageService} = useEntrances();
 
   const [secret, setSecret] = useState('');
@@ -33,7 +33,7 @@ export default function ImportCreateWalletScreen(): ReactNode {
     <>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => router.back()} />
-        <Appbar.Content title="Import & Create Wallet" />
+        <Appbar.Content title="Import wallet" />
       </Appbar.Header>
       <QRCodeInputModal {...qrCodeInputModalProps} />
       <ScrollView contentContainerStyle={{flexGrow: 1}}>

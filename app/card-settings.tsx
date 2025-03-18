@@ -72,7 +72,7 @@ export default function CardSettingsScreen(): ReactNode {
                   icon = 'key-link';
                 }
               } else {
-                title = 'Unsupported wallet';
+                title = tangemWallet.curve;
                 description = tangemWallet.publicKey;
                 icon = 'key-remove';
               }
@@ -93,6 +93,8 @@ export default function CardSettingsScreen(): ReactNode {
                   title={title}
                   titleEllipsizeMode="middle"
                   description={description}
+                  descriptionEllipsizeMode="middle"
+                  descriptionNumberOfLines={1}
                   right={({style}) => (
                     <AsyncIconButton
                       style={{...style, marginRight: -8}}
