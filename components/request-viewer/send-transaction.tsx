@@ -12,7 +12,11 @@ import type {Wallet, WalletDerivation} from '../../core/index.js';
 import {TangemSigner} from '../../core/index.js';
 import {useEntrances} from '../../entrances.js';
 import {useAsyncValueUpdate} from '../../hooks/index.js';
-import type {ChainService, WalletKitService} from '../../services/index.js';
+import {
+  type ChainService,
+  type WalletKitService,
+  useChainDisplayName,
+} from '../../services/index.js';
 import {eip155ChainIdToBigInt} from '../../utils/index.js';
 import {AsyncButton, ListItemWithDescriptionBlock} from '../ui/index.js';
 
@@ -50,7 +54,8 @@ export function SendTransaction({request}: SendTransactionProps): ReactNode {
 
   const wallet = walletStorageService.getWalletByAddress(from);
 
-  const chainName = chainService.getNetworkText(chainId);
+  const chainName = useChainDisplayName(chainService, chainId);
+
   const provider = chainService.getRPC(chainId);
 
   const [feeData, _updateFeeData] = useAsyncValueUpdate(async update => {

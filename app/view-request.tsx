@@ -7,7 +7,7 @@ import {Alert} from 'react-native';
 import {SendTransaction} from '../components/request-viewer/send-transaction.js';
 import {SignMessage} from '../components/request-viewer/sign-message.js';
 import {SignTypedData} from '../components/request-viewer/sign-typed-data.js';
-import {RPC_METHOD_DISPLAY_NAME} from '../core/index.js';
+import {RPC_METHOD_DISPLAY_NAME} from '../constants/index.js';
 import {useEntrances} from '../entrances.js';
 
 export default function ViewRequestScreen(): ReactNode {

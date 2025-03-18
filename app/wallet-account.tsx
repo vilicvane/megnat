@@ -9,7 +9,7 @@ import {
   useQRCodeInputModalProps,
 } from '../components/qrcode-input-modal.js';
 import {AsyncButton, AsyncIconButton} from '../components/ui/index.js';
-import {RPC_METHOD_DISPLAY_NAME} from '../core/index.js';
+import {RPC_METHOD_DISPLAY_NAME} from '../constants/index.js';
 import {useEntrances} from '../entrances.js';
 import type {UIService, WalletKitService} from '../services/index.js';
 import {

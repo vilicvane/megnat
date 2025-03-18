@@ -2,6 +2,8 @@ import type {EffectCallback} from 'react';
 import {useEffect, useState} from 'react';
 import useEvent from 'react-use-event-hook';
 
+import type {Event} from '../utils/index.js';
+
 export function useMountEffect(callback: EffectCallback): void {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(callback, []);
@@ -57,4 +59,21 @@ export function useVisibleOpenClose(): {
   const close = useEvent(() => setVisible(false));
 
   return {visible, open, close};
+}
+
+export function useEventUpdateValue<T, TEventData>(
+  event: Event<TEventData>,
+  callback: (event: TEventData | undefined) => T,
+): T {
+  const [value, setValue] = useState(() => callback(undefined));
+
+  useEffect(
+    () =>
+      event.on(data => {
+        setValue(callback(data));
+      }),
+    [event, callback],
+  );
+
+  return value;
 }

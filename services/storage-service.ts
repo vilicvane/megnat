@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import type {Chain, Wallet} from '../core/index.js';
+import type {CustomChain, ListedChain, Wallet} from '../core/index.js';
 
 export class StorageService {
   async get<TKey extends keyof Mapping>(
@@ -20,18 +20,7 @@ export class StorageService {
 
 type Mapping = {
   wallets: Wallet[];
-  chains: Chain[];
-  infura: InfuraStorageData;
-};
-
-export type InfuraStorageData = {
-  key: string;
-  chains: InfuraChainStorageData[];
-};
-
-export type InfuraChainStorageData = {
-  name: string;
-  subdomain: string;
-  /** bigint as string */
-  id: string;
+  customChains: CustomChain[];
+  listedChains: ListedChain[];
+  infuraKey: string;
 };

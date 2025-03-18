@@ -2,12 +2,19 @@ import {ethers} from 'ethers';
 
 import {
   CHAIN_EXPLORER_URL_FALLBACK,
-  CHAIN_METADATA_DICT,
+  CHAIN_LIST_URL,
+  INFURA_RPC_ENDPOINT,
+  INFURA_SUBDOMAIN_DICT,
 } from '../constants/index.js';
-import type {Chain} from '../core/index.js';
-import {eip155ChainIdToBigInt, eip155ChainIdToString} from '../utils/index.js';
+import type {CustomChain, ListedChain} from '../core/index.js';
+import {useEventUpdateValue} from '../hooks/index.js';
+import {
+  Event,
+  eip155ChainIdToBigInt,
+  eip155ChainIdToString,
+} from '../utils/index.js';
 
-import type {InfuraStorageData, StorageService} from './storage-service.js';
+import type {StorageService} from './storage-service.js';
 
 type CommunityJsonRpcProviderConstructor = new (
   network: ethers.Networkish,
@@ -25,35 +32,38 @@ const COMMUNITY_PROVIDERS: CommunityJsonRpcProviderConstructor[] = [
 ];
 
 export class ChainService {
-  private chainMap: Map<string, Chain>;
+  private customChainMap: Map<string, CustomChain>;
+  private listedChainMap: Map<string, ListedChain>;
 
   private constructor(
-    chains: Chain[],
-    {infura}: {infura: InfuraStorageData | undefined},
+    private storageService: StorageService,
+    customChains: CustomChain[] = [],
+    listedChains: ListedChain[] = [],
+    {infuraKey}: {infuraKey: string | undefined},
   ) {
-    chains = [
-      ...(infura
-        ? infura.chains.map(chain => {
-            const id = eip155ChainIdToString(BigInt(chain.id));
-
-            return {
-              id,
-              name: chain.name,
-              rpc: INFURA_RPC_ENDPOINT(chain.subdomain, infura.key),
-              explorer:
-                CHAIN_METADATA_DICT[id]?.explorer ??
-                CHAIN_EXPLORER_URL_FALLBACK,
-            };
-          })
+    customChains = [
+      ...(infuraKey
+        ? Object.entries(INFURA_SUBDOMAIN_DICT as Record<string, string>).map(
+            ([chainId, subdomain]): CustomChain => {
+              return {
+                id: chainId,
+                name: undefined,
+                rpc: INFURA_RPC_ENDPOINT(subdomain, infuraKey),
+              };
+            },
+          )
         : []),
-      ...chains,
+      ...customChains,
     ];
 
-    this.chainMap = new Map(chains.map(chain => [chain.id, chain]));
+    this.customChainMap = new Map(customChains.map(chain => [chain.id, chain]));
+    this.listedChainMap = new Map(listedChains.map(chain => [chain.id, chain]));
+
+    void this.fetchChainList();
   }
 
   getRPC(chainId: string): ethers.JsonRpcProvider | undefined {
-    const rpc = this.chainMap.get(chainId)?.rpc;
+    const rpc = this.customChainMap.get(chainId)?.rpc;
 
     if (rpc) {
       return new ethers.JsonRpcProvider(rpc);
@@ -83,35 +93,75 @@ export class ChainService {
     return undefined;
   }
 
-  getNetworkText(chainId: string): string {
-    const name =
-      this.chainMap.get(chainId)?.name ?? CHAIN_METADATA_DICT[chainId]?.name;
-
-    if (name) {
-      return `${name} (${chainId})`;
-    } else {
-      return chainId;
-    }
+  getChainDisplayName(chainId: string): string | undefined {
+    return (
+      this.customChainMap.get(chainId)?.name ||
+      this.listedChainMap.get(chainId)?.name ||
+      undefined
+    );
   }
 
   getExplorerURL(chainId: string, txHash: string): string {
     const url =
-      this.chainMap.get(chainId)?.explorer ??
-      CHAIN_METADATA_DICT[chainId]?.explorer ??
-      CHAIN_EXPLORER_URL_FALLBACK;
+      this.listedChainMap.get(chainId)?.explorer ?? CHAIN_EXPLORER_URL_FALLBACK;
 
     return url + txHash;
   }
 
+  readonly chainListUpdate = new Event<void>('chainListUpdate');
+
+  private async fetchChainList(): Promise<void> {
+    const response = await fetch(CHAIN_LIST_URL);
+
+    const rawChains: {
+      name: string;
+      title?: string;
+      chainId: number;
+      explorers?: {
+        name: string;
+        url: string;
+        standard: string;
+      }[];
+    }[] = await response.json();
+
+    const chains = rawChains.map((chain): ListedChain => {
+      const chainId = eip155ChainIdToString(BigInt(chain.chainId));
+      const name = chain.title || chain.name;
+      const explorer = chain.explorers?.find(
+        explorer => explorer.standard === 'EIP3091',
+      )?.url;
+
+      return {
+        id: chainId,
+        name,
+        explorer,
+      };
+    });
+
+    this.listedChainMap = new Map(chains.map(chain => [chain.id, chain]));
+
+    this.chainListUpdate.emit();
+
+    void this.storageService.set('listedChains', chains);
+  }
+
   static async create(storageService: StorageService): Promise<ChainService> {
-    const chains = await storageService.get('chains');
+    const customChains = await storageService.get('customChains');
+    const listedChains = await storageService.get('listedChains');
 
-    const infura = await storageService.get('infura');
+    const infuraKey = await storageService.get('infuraKey');
 
-    return new ChainService(chains ?? [], {infura});
+    return new ChainService(storageService, customChains, listedChains, {
+      infuraKey,
+    });
   }
 }
 
-function INFURA_RPC_ENDPOINT(subdomain: string, key: string): string {
-  return `https://${subdomain}.infura.io/v3/${key}`;
+export function useChainDisplayName(
+  chainService: ChainService,
+  chainId: string,
+): string | undefined {
+  return useEventUpdateValue(chainService.chainListUpdate, () =>
+    chainService.getChainDisplayName(chainId),
+  );
 }

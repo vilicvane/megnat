@@ -5,10 +5,14 @@ import React from 'react';
 import {Alert, ScrollView, View} from 'react-native';
 import {Appbar, List} from 'react-native-paper';
 
+import {RPC_METHOD_DISPLAY_NAME} from '../../constants/index.js';
 import type {Wallet, WalletDerivation} from '../../core/index.js';
-import {RPC_METHOD_DISPLAY_NAME, TangemSigner} from '../../core/index.js';
+import {TangemSigner} from '../../core/index.js';
 import {useEntrances} from '../../entrances.js';
-import type {WalletKitService} from '../../services/index.js';
+import {
+  type WalletKitService,
+  useChainDisplayName,
+} from '../../services/index.js';
 import {isValidUTF8} from '../../utils/index.js';
 import {AsyncButton, ListItemWithDescriptionBlock} from '../ui/index.js';
 
@@ -43,7 +47,7 @@ export function SignMessage({request}: SignMessageProps): ReactNode {
 
   const wallet = walletStorageService.getWalletByAddress(address);
 
-  const chainName = chainService.getNetworkText(chainId);
+  const chainName = useChainDisplayName(chainService, chainId);
 
   const signDisabled = !wallet;
 
