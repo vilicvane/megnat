@@ -17,7 +17,7 @@ import {useEffect} from 'react';
 
 import {useRefresh} from '../hooks/index.js';
 
-const SUPPORTED_METHODS = [
+export const SUPPORTED_METHODS = [
   'eth_sendTransaction',
   'eth_sign',
   'eth_signTypedData',
@@ -25,7 +25,7 @@ const SUPPORTED_METHODS = [
   'personal_sign',
 ];
 
-const SUPPORTED_METHOD_SET = new Set(SUPPORTED_METHODS);
+export const SUPPORTED_METHOD_SET = new Set(SUPPORTED_METHODS);
 
 export class WalletKitService {
   private pendingSession:

@@ -2,11 +2,12 @@ import {Slot, SplashScreen} from 'expo-router';
 import type {ReactNode} from 'react';
 import React, {useEffect} from 'react';
 import {LogBox, StatusBar, View} from 'react-native';
-import {MD3DarkTheme, PaperProvider} from 'react-native-paper';
+import {PaperProvider} from 'react-native-paper';
 import {setUnhandledPromiseRejectionTracker} from 'react-native-promise-rejection-utils';
 
 import {EntrancesContext, createEntrances} from '../entrances.js';
 import {useAsyncValue} from '../hooks/index.js';
+import {THEME} from '../theme.js';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -39,13 +40,11 @@ export default function RootLayout(): ReactNode {
     <>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={MD3DarkTheme.colors.background}
+        backgroundColor={THEME.colors.background}
       />
-      <PaperProvider theme={MD3DarkTheme}>
+      <PaperProvider theme={THEME}>
         <EntrancesContext.Provider value={entrances}>
-          <View
-            style={{flex: 1, backgroundColor: MD3DarkTheme.colors.background}}
-          >
+          <View style={{flex: 1, backgroundColor: THEME.colors.background}}>
             <Slot />
           </View>
         </EntrancesContext.Provider>

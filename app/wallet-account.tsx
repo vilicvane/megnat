@@ -1,8 +1,8 @@
 import * as Clipboard from 'expo-clipboard';
 import {router, useLocalSearchParams} from 'expo-router';
 import type {ReactNode} from 'react';
-import {ScrollView, ToastAndroid, View} from 'react-native';
-import {Appbar, List, useTheme} from 'react-native-paper';
+import {Alert, ScrollView, ToastAndroid, View} from 'react-native';
+import {Appbar, IconButton, List, Text} from 'react-native-paper';
 
 import {
   QRCodeInputModal,
@@ -13,12 +13,16 @@ import {RPC_METHOD_DISPLAY_NAME} from '../constants/index.js';
 import {useEntrances} from '../entrances.js';
 import type {UIService, WalletKitService} from '../services/index.js';
 import {
+  SUPPORTED_METHOD_SET,
   useWalletKitPendingSessionRequests,
   useWalletKitSessions,
 } from '../services/index.js';
+import {useTheme} from '../theme.js';
 
 export default function WalletAccountScreen(): ReactNode {
   const {address} = useLocalSearchParams<{address: string}>();
+
+  const theme = useTheme();
 
   const {walletKitService, uiService, walletStorageService} = useEntrances();
 
@@ -31,8 +35,6 @@ export default function WalletAccountScreen(): ReactNode {
 
   const derivationPath =
     walletStorageService.getWalletByAddress(address)?.derivation.path;
-
-  const theme = useTheme();
 
   const [qrCodeInputModalProps, openQrCodeInputModal] =
     useQRCodeInputModalProps();
@@ -86,30 +88,59 @@ export default function WalletAccountScreen(): ReactNode {
         )}
         {sessions.length > 0 && (
           <List.Section title="Sessions">
-            {sessions.map(session => (
-              <List.Item
-                key={session.topic}
-                title={
-                  session.peer.metadata.name ||
-                  new URL(session.peer.metadata.url).hostname
-                }
-                description={session.peer.metadata.url}
-                left={({style}) => (
-                  <List.Icon
-                    icon="web"
-                    color={theme.colors.primary}
-                    style={style}
-                  />
-                )}
-                right={({style}) => (
-                  <AsyncIconButton
-                    icon="close"
-                    style={{...style, marginRight: -8}}
-                    handler={() => walletKitService.disconnect(session.topic)}
-                  />
-                )}
-              />
-            ))}
+            {sessions.map(session => {
+              const unsupported =
+                session.namespaces.eip155?.methods.some(
+                  method => !SUPPORTED_METHOD_SET.has(method),
+                ) ?? false;
+
+              return (
+                <List.Item
+                  key={session.topic}
+                  left={({style}) => (
+                    <List.Icon
+                      icon="web"
+                      color={theme.colors.primary}
+                      style={style}
+                    />
+                  )}
+                  title={
+                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                      <Text>
+                        {session.peer.metadata.name ||
+                          new URL(session.peer.metadata.url).hostname}
+                      </Text>
+                      {unsupported && (
+                        <IconButton
+                          icon="alert-circle"
+                          iconColor={theme.colors.alert}
+                          size={16}
+                          style={{
+                            margin: 0,
+                            marginLeft: -4,
+                            height: 16,
+                          }}
+                          onPress={() => {
+                            Alert.alert(
+                              'Unsupported methods',
+                              'This session requires some methods that are not supported by Megnat, thus may not work as expected.',
+                            );
+                          }}
+                        />
+                      )}
+                    </View>
+                  }
+                  description={session.peer.metadata.url}
+                  right={({style}) => (
+                    <AsyncIconButton
+                      icon="close"
+                      style={{...style, marginRight: -8}}
+                      handler={() => walletKitService.disconnect(session.topic)}
+                    />
+                  )}
+                />
+              );
+            })}
           </List.Section>
         )}
       </ScrollView>
