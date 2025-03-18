@@ -1,15 +1,26 @@
 /* eslint-disable @mufan/scoped-modules */
 
 import {router} from 'expo-router';
-import type {ReactNode} from 'react';
-import {Alert, ScrollView, View} from 'react-native';
-import {Appbar, Badge, Button, List, Menu, useTheme} from 'react-native-paper';
+import {type ReactNode, useMemo} from 'react';
+import {Alert, Image, ScrollView, View} from 'react-native';
+import {
+  Appbar,
+  Badge,
+  Button,
+  List,
+  Menu,
+  Text,
+  useTheme,
+} from 'react-native-paper';
 
 import {NEW_CARD_BACKUP_NEEDED_FOR_ACCESS_CODE_MESSAGE} from '../constants/index.js';
 import {useEntrances} from '../entrances.js';
-import {useValueUpdate, useVisibleOpenClose} from '../hooks/index.js';
+import {useVisibleOpenClose} from '../hooks/index.js';
 import type {UIService, WalletStorageService} from '../services/index.js';
-import {useWalletKitPendingSessionRequests} from '../services/index.js';
+import {
+  useWalletKitPendingSessionRequests,
+  useWallets,
+} from '../services/index.js';
 import {
   tangem,
   tangemWalletToWallet,
@@ -21,15 +32,15 @@ export default function IndexScreen(): ReactNode {
 
   const {walletStorageService, walletKitService, uiService} = useEntrances();
 
-  const [wallets, updateWallets] = useValueUpdate(() => {
-    const wallets = walletStorageService.getWallets();
+  const wallets = useWallets(walletStorageService);
 
+  const sortedWallets = useMemo(() => {
     return wallets.sort(
       (a, b) =>
         (a.chainCode ? 1 : 0) - (b.chainCode ? 1 : 0) ||
         a.name.localeCompare(b.name),
     );
-  });
+  }, [wallets]);
 
   const pendingSessionRequests =
     useWalletKitPendingSessionRequests(walletKitService);
@@ -39,7 +50,29 @@ export default function IndexScreen(): ReactNode {
   return (
     <>
       <Appbar.Header>
-        <Appbar.Content title="Megnat" />
+        <Appbar.Content
+          title={
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+              }}
+            >
+              <Image
+                source={require('../assets/images/compact-icon.png')} // Add your image source here
+                style={{
+                  marginLeft: -8,
+                  marginRight: 8,
+                  width: 48,
+                  height: 48,
+                }}
+              />
+              <Text variant="titleLarge" style={{marginTop: 0}}>
+                megnat
+              </Text>
+            </View>
+          }
+        />
         <Menu
           visible={menu.visible}
           onDismiss={menu.close}
@@ -51,7 +84,7 @@ export default function IndexScreen(): ReactNode {
             onPress={() => {
               menu.close();
 
-              void addWallet(walletStorageService).finally(updateWallets);
+              void addWallet(walletStorageService);
             }}
           />
           <Menu.Item
@@ -60,7 +93,7 @@ export default function IndexScreen(): ReactNode {
             onPress={() => {
               menu.close();
 
-              void createWallet(walletStorageService).finally(updateWallets);
+              void createWallet(walletStorageService);
             }}
           />
           <Menu.Item
@@ -84,51 +117,65 @@ export default function IndexScreen(): ReactNode {
         </Menu>
       </Appbar.Header>
       <ScrollView contentContainerStyle={{flexGrow: 1}}>
-        <List.Section title="Wallets">
-          {wallets?.map(wallet => {
-            const [accordionIcon, addressIcon] = wallet.chainCode
-              ? ['key-link', 'file-link']
-              : ['key', 'file-key'];
+        {sortedWallets.length > 0 ? (
+          <List.Section title="Wallets">
+            {sortedWallets.map(wallet => {
+              const [accordionIcon, addressIcon] = wallet.chainCode
+                ? ['key-link', 'file-link']
+                : ['key', 'file-key'];
 
-            return (
-              <List.Accordion
-                key={wallet.publicKey}
-                left={props => <List.Icon {...props} icon={accordionIcon} />}
-                title={wallet.name}
-                titleStyle={{color: theme.colors.onBackground}}
-                onLongPress={() => {
-                  router.push({
-                    pathname: '/wallet',
-                    params: {walletPublicKey: wallet.publicKey},
-                  });
-                }}
-              >
-                {wallet.derivations.map(({path, address}, index) => (
-                  <List.Item
-                    key={index}
-                    style={{marginLeft: 8}}
-                    left={({style}) => (
-                      <List.Icon
-                        icon={addressIcon}
-                        color={theme.colors.primary}
-                        style={{...style, alignSelf: 'center'}}
-                      />
-                    )}
-                    title={address}
-                    titleEllipsizeMode="middle"
-                    description={path}
-                    onPress={() => {
-                      router.push({
-                        pathname: '/wallet-account',
-                        params: {address},
-                      });
-                    }}
-                  />
-                ))}
-              </List.Accordion>
-            );
-          })}
-        </List.Section>
+              return (
+                <List.Accordion
+                  key={wallet.publicKey}
+                  left={props => <List.Icon {...props} icon={accordionIcon} />}
+                  title={wallet.name}
+                  titleStyle={{color: theme.colors.onBackground}}
+                  onLongPress={() => {
+                    router.push({
+                      pathname: '/wallet',
+                      params: {walletPublicKey: wallet.publicKey},
+                    });
+                  }}
+                >
+                  {wallet.derivations.map(({path, address}, index) => (
+                    <List.Item
+                      key={index}
+                      style={{marginLeft: 8}}
+                      left={({style}) => (
+                        <List.Icon
+                          icon={addressIcon}
+                          color={theme.colors.primary}
+                          style={{...style, alignSelf: 'center'}}
+                        />
+                      )}
+                      title={address}
+                      titleEllipsizeMode="middle"
+                      description={path}
+                      onPress={() => {
+                        router.push({
+                          pathname: '/wallet-account',
+                          params: {address},
+                        });
+                      }}
+                    />
+                  ))}
+                </List.Accordion>
+              );
+            })}
+          </List.Section>
+        ) : (
+          <View
+            style={{
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{color: theme.colors.onSurfaceVariant}}>
+              No wallets added yet
+            </Text>
+          </View>
+        )}
       </ScrollView>
       <View style={{margin: 16}}>
         <Button

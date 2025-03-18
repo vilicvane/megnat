@@ -1,6 +1,8 @@
 import {ethers} from 'ethers';
+import {useEffect} from 'react';
 
 import type {Wallet, WalletDerivation} from '../core/index.js';
+import {useRefresh} from '../hooks/index.js';
 
 import type {StorageService} from './storage-service.js';
 
@@ -23,6 +25,8 @@ export class WalletStorageService {
       this.wallets.push(wallet);
     }
 
+    this.emitUpdate();
+
     await this.storage.set('wallets', this.wallets);
   }
 
@@ -40,6 +44,8 @@ export class WalletStorageService {
     }
 
     this.wallets.splice(index, 1);
+
+    this.emitUpdate();
 
     await this.storage.set('wallets', this.wallets);
   }
@@ -83,6 +89,8 @@ export class WalletStorageService {
 
     wallet.name = name;
 
+    this.emitUpdate();
+
     await this.storage.set('wallets', this.wallets);
   }
 
@@ -105,6 +113,8 @@ export class WalletStorageService {
 
     wallet.derivations.push(derivation);
 
+    this.emitUpdate();
+
     await this.storage.set('wallets', this.wallets);
 
     return derivation;
@@ -123,7 +133,23 @@ export class WalletStorageService {
 
     wallet.derivations.splice(index, 1);
 
+    this.emitUpdate();
+
     await this.storage.set('wallets', this.wallets);
+  }
+
+  private updateCallbackSet = new Set<() => void>();
+
+  onUpdate(callback: () => void): () => void {
+    this.updateCallbackSet.add(callback);
+
+    return () => {
+      this.updateCallbackSet.delete(callback);
+    };
+  }
+
+  emitUpdate(): void {
+    this.updateCallbackSet.forEach(callback => callback());
   }
 
   static async create(storage: StorageService): Promise<WalletStorageService> {
@@ -131,4 +157,12 @@ export class WalletStorageService {
 
     return new WalletStorageService(storage, wallets ?? []);
   }
+}
+
+export function useWallets(service: WalletStorageService): Wallet[] {
+  const refresh = useRefresh();
+
+  useEffect(() => service.onUpdate(refresh), [refresh, service]);
+
+  return service.getWallets();
 }

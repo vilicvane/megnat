@@ -29,18 +29,6 @@ export function useAsyncValueUpdate<T>(
   return [state, update];
 }
 
-export function useValueUpdate<T>(
-  callback: (update: boolean) => T,
-): [T | undefined, () => void] {
-  const [state, setState] = useState<T>();
-
-  const update = useEvent(() => setState(callback(true)));
-
-  useMountEffect(() => setState(callback(false)));
-
-  return [state, update];
-}
-
 export function useRefresh(): () => void {
   const [, setRefresh] = useState(0);
 
