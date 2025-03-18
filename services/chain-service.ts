@@ -33,7 +33,10 @@ const COMMUNITY_PROVIDERS: CommunityJsonRpcProviderConstructor[] = [
 
 export class ChainService {
   private customChainMap: Map<string, CustomChain>;
+  private aggregatedCustomChainMap!: Map<string, CustomChain>;
   private listedChainMap: Map<string, ListedChain>;
+
+  private infuraKey: string | undefined;
 
   private constructor(
     private storageService: StorageService,
@@ -41,31 +44,22 @@ export class ChainService {
     listedChains: ListedChain[] = [],
     {infuraKey}: {infuraKey: string | undefined},
   ) {
-    customChains = [
-      ...(infuraKey
-        ? Object.entries(INFURA_SUBDOMAIN_DICT as Record<string, string>).map(
-            ([chainId, subdomain]): CustomChain => {
-              return {
-                id: chainId,
-                name: undefined,
-                rpc: INFURA_RPC_ENDPOINT(subdomain, infuraKey),
-              };
-            },
-          )
-        : []),
-      ...customChains,
-    ];
+    this.infuraKey = infuraKey;
 
     this.customChainMap = new Map(customChains.map(chain => [chain.id, chain]));
+
+    this.updateCustomChains();
+
     this.listedChainMap = new Map(listedChains.map(chain => [chain.id, chain]));
 
     void this.fetchChainList();
   }
 
   getRPC(chainId: string): ethers.JsonRpcProvider | undefined {
-    const rpc = this.customChainMap.get(chainId)?.rpc;
+    const rpc = this.aggregatedCustomChainMap.get(chainId)?.rpc;
 
     if (rpc) {
+      console.info('selected custom JSON RPC provider', rpc);
       return new ethers.JsonRpcProvider(rpc);
     }
 
@@ -106,6 +100,79 @@ export class ChainService {
       this.listedChainMap.get(chainId)?.explorer ?? CHAIN_EXPLORER_URL_FALLBACK;
 
     return url + txHash;
+  }
+
+  readonly keyUpdate = new Event<void>('keyUpdate');
+
+  getInfuraKey(): string | undefined {
+    return this.infuraKey;
+  }
+
+  async setInfuraKey(key: string): Promise<void> {
+    this.infuraKey = key || undefined;
+
+    this.updateCustomChains();
+
+    this.keyUpdate.emit();
+
+    await this.storageService.set('infuraKey', key);
+  }
+
+  private updateCustomChains(): void {
+    const infuraKey = this.infuraKey;
+
+    const aggregatedCustomChains = [
+      ...(infuraKey
+        ? Object.entries(INFURA_SUBDOMAIN_DICT as Record<string, string>).map(
+            ([chainId, subdomain]): CustomChain => {
+              return {
+                id: chainId,
+                name: undefined,
+                rpc: INFURA_RPC_ENDPOINT(subdomain, infuraKey),
+              };
+            },
+          )
+        : []),
+      ...this.customChainMap.values(),
+    ];
+
+    console.info('aggregated custom chains', aggregatedCustomChains);
+
+    this.aggregatedCustomChainMap = new Map(
+      aggregatedCustomChains.map(chain => [chain.id, chain]),
+    );
+
+    this.customChainUpdate.emit();
+  }
+
+  readonly customChainUpdate = new Event<void>('customChainUpdate');
+
+  getCustomChains(): CustomChain[] {
+    return Array.from(this.customChainMap.values());
+  }
+
+  getCustomChain(id: string): CustomChain | undefined {
+    return this.customChainMap.get(id);
+  }
+
+  async addCustomChain(chain: CustomChain): Promise<void> {
+    this.customChainMap.set(chain.id, chain);
+
+    this.updateCustomChains();
+
+    this.customChainUpdate.emit();
+
+    await this.storageService.set('customChains', this.getCustomChains());
+  }
+
+  async removeCustomChain(chainId: string): Promise<void> {
+    this.customChainMap.delete(chainId);
+
+    this.updateCustomChains();
+
+    this.customChainUpdate.emit();
+
+    await this.storageService.set('customChains', this.getCustomChains());
   }
 
   readonly chainListUpdate = new Event<void>('chainListUpdate');
@@ -157,11 +224,18 @@ export class ChainService {
   }
 }
 
+export function useCustomChains(service: ChainService): CustomChain[] {
+  return useEventUpdateValue(service.customChainUpdate, () =>
+    service.getCustomChains(),
+  );
+}
+
 export function useChainDisplayName(
   chainService: ChainService,
   chainId: string,
 ): string | undefined {
-  return useEventUpdateValue(chainService.chainListUpdate, () =>
-    chainService.getChainDisplayName(chainId),
+  return useEventUpdateValue(
+    [chainService.chainListUpdate, chainService.customChainUpdate],
+    () => chainService.getChainDisplayName(chainId),
   );
 }

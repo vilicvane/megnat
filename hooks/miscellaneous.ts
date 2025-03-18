@@ -62,18 +62,27 @@ export function useVisibleOpenClose(): {
 }
 
 export function useEventUpdateValue<T, TEventData>(
-  event: Event<TEventData>,
+  event: Event<TEventData> | Event<TEventData>[],
   callback: (event: TEventData | undefined) => T,
 ): T {
   const [value, setValue] = useState(() => callback(undefined));
 
-  useEffect(
-    () =>
-      event.on(data => {
-        setValue(callback(data));
-      }),
-    [event, callback],
-  );
+  callback = useEvent(callback);
+
+  const events = Array.isArray(event) ? event : [event];
+
+  useEffect(() => {
+    const disposers = events.map(event =>
+      event.on(data => setValue(callback(data))),
+    );
+
+    return () => {
+      for (const disposer of disposers) {
+        disposer();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [callback, ...events]);
 
   return value;
 }

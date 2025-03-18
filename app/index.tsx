@@ -119,6 +119,8 @@ export default function IndexScreen(): ReactNode {
             leadingIcon="web"
             onPress={() => {
               settingsMenu.close();
+
+              router.push('/chain-settings');
             }}
           />
           <Menu.Item

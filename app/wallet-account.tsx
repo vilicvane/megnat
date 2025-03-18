@@ -134,7 +134,7 @@ export default function WalletAccountScreen(): ReactNode {
                   right={({style}) => (
                     <AsyncIconButton
                       icon="close"
-                      style={{...style, marginRight: -8}}
+                      style={{...style, marginRight: -16}}
                       handler={() => walletKitService.disconnect(session.topic)}
                     />
                   )}

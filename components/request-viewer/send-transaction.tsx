@@ -4,7 +4,7 @@ import {formatEther, toBigInt} from 'ethers';
 import * as Clipboard from 'expo-clipboard';
 import {router} from 'expo-router';
 import {openBrowserAsync} from 'expo-web-browser';
-import type {ReactNode} from 'react';
+import {type ReactNode, useState} from 'react';
 import {Alert, ScrollView, View} from 'react-native';
 import {Appbar, List} from 'react-native-paper';
 
@@ -56,7 +56,7 @@ export function SendTransaction({request}: SendTransactionProps): ReactNode {
 
   const chainName = useChainDisplayName(chainService, chainId);
 
-  const provider = chainService.getRPC(chainId);
+  const [provider] = useState(() => chainService.getRPC(chainId));
 
   const [feeData, _updateFeeData] = useAsyncValueUpdate(async update => {
     if (!provider) {

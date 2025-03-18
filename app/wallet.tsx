@@ -95,7 +95,11 @@ export default function WalletScreen(): ReactNode {
                 path !== undefined && path !== DERIVATION_PATH_DEFAULT
                   ? ({style}) => (
                       <AsyncIconButton
-                        style={{...style, alignSelf: 'center', marginRight: -8}}
+                        style={{
+                          ...style,
+                          alignSelf: 'center',
+                          marginRight: -16,
+                        }}
                         icon="close"
                         handler={async () => {
                           await removeDerivation(

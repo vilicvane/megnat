@@ -97,7 +97,7 @@ export default function CardSettingsScreen(): ReactNode {
                   descriptionNumberOfLines={1}
                   right={({style}) => (
                     <AsyncIconButton
-                      style={{...style, marginRight: -8}}
+                      style={{...style, marginRight: -16}}
                       icon="delete-alert"
                       handler={async () => {
                         await purgeWallet(

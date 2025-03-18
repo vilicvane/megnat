@@ -5,7 +5,7 @@ import {TextInput} from 'react-native-paper';
 
 export type EditableTextInputProps = TextInputProps & {
   initialValue: string;
-  handler?: (text: string) => Promise<void>;
+  handler?: (text: string) => Promise<void> | void;
   savingEnabled?: boolean;
 };
 
@@ -44,15 +44,15 @@ export function EditableTextInput({
           return;
         }
 
-        if (savingEnabled) {
-          setSaving(true);
-        }
+        const result = handler(text);
 
-        void handler(text).finally(() => {
-          if (savingEnabled) {
+        if (result instanceof Promise && savingEnabled) {
+          setSaving(true);
+
+          void result.finally(() => {
             setSaving(false);
-          }
-        });
+          });
+        }
       }}
     />
   );
