@@ -25,6 +25,8 @@ const SUPPORTED_METHODS = [
   'personal_sign',
 ];
 
+const SUPPORTED_METHOD_SET = new Set(SUPPORTED_METHODS);
+
 export class WalletKitService {
   private pendingSession:
     | {
@@ -70,7 +72,15 @@ export class WalletKitService {
     walletKit.on('session_request', event => {
       console.info('session_request', event);
 
-      this.emitPendingSessionRequestUpdate();
+      if (SUPPORTED_METHOD_SET.has(event.params.request.method)) {
+        void this.rejectSessionRequest(
+          event,
+          getSdkError('UNSUPPORTED_METHODS'),
+        );
+        return;
+      } else {
+        this.emitPendingSessionRequestUpdate();
+      }
 
       void walletKit.extendSession({
         topic: event.topic,
@@ -109,10 +119,16 @@ export class WalletKitService {
     this.emitSessionUpdate();
   }
 
-  getPendingSessionRequest(id: number): PendingRequestTypes.Struct | undefined {
+  getPendingSessionRequests(): PendingRequestTypes.Struct[] {
     return this.walletKit
       .getPendingSessionRequests()
-      .find(request => request.id === id);
+      .filter(request =>
+        SUPPORTED_METHOD_SET.has(request.params.request.method),
+      );
+  }
+
+  getPendingSessionRequest(id: number): PendingRequestTypes.Struct | undefined {
+    return this.getPendingSessionRequests().find(request => request.id === id);
   }
 
   async completeSessionAuthentication(
@@ -134,16 +150,16 @@ export class WalletKitService {
     });
   }
 
-  async rejectSessionRequest({
-    topic,
-    id,
-  }: PendingRequestTypes.Struct): Promise<void> {
+  async rejectSessionRequest(
+    {topic, id}: PendingRequestTypes.Struct,
+    error = getSdkError('USER_REJECTED'),
+  ): Promise<void> {
     await this.walletKit.respondSessionRequest({
       topic,
       response: {
         id,
         jsonrpc: '2.0',
-        error: getSdkError('USER_REJECTED'),
+        error,
       },
     });
 
@@ -170,10 +186,12 @@ export class WalletKitService {
     {id, params}: SignClientTypes.EventArguments['session_proposal'],
     address: string,
   ): Promise<void> {
-    const chains = [
-      ...(params.requiredNamespaces.eip155?.chains ?? []),
-      ...(params.optionalNamespaces.eip155?.chains ?? []),
-    ];
+    const chains = Array.from(
+      new Set([
+        ...(params.requiredNamespaces.eip155?.chains ?? []),
+        ...(params.optionalNamespaces.eip155?.chains ?? []),
+      ]),
+    );
 
     if (chains.length === 0) {
       await this.walletKit.rejectSession({
@@ -183,12 +201,23 @@ export class WalletKitService {
       return;
     }
 
+    // Filter out unsupported methods in optional namespaces but accept all
+    // methods in required namespaces to maximize compatibility.
+    const methods = Array.from(
+      new Set([
+        ...(params.requiredNamespaces.eip155?.methods ?? []),
+        ...(params.optionalNamespaces.eip155?.methods.filter(method =>
+          SUPPORTED_METHOD_SET.has(method),
+        ) ?? []),
+      ]),
+    );
+
     const approvedNamespaces = buildApprovedNamespaces({
       proposal: params,
       supportedNamespaces: {
         eip155: {
           chains,
-          methods: SUPPORTED_METHODS,
+          methods,
           events: params.requiredNamespaces.eip155?.events ?? [],
           accounts: chains.map(chain => `${chain}:${address}`),
         },
@@ -327,7 +356,7 @@ export function useWalletKitPendingSessionRequests(
 
   const topicToSessionDict = service.walletKit.getActiveSessions();
 
-  let requests = service.walletKit.getPendingSessionRequests().map(request => {
+  let requests = service.getPendingSessionRequests().map(request => {
     return {
       session: topicToSessionDict[request.topic],
       request,
