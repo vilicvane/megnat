@@ -39,7 +39,7 @@ export default function IndexScreen(): ReactNode {
   return (
     <>
       <Appbar.Header>
-        <Appbar.Content title="Wallets" />
+        <Appbar.Content title="Megnat" />
         <Menu
           visible={menu.visible}
           onDismiss={menu.close}
@@ -84,7 +84,7 @@ export default function IndexScreen(): ReactNode {
         </Menu>
       </Appbar.Header>
       <ScrollView contentContainerStyle={{flexGrow: 1}}>
-        <List.Section>
+        <List.Section title="Wallets">
           {wallets?.map(wallet => {
             const [accordionIcon, addressIcon] = wallet.chainCode
               ? ['key-link', 'file-link']
