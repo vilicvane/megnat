@@ -73,13 +73,12 @@ export class WalletKitService {
       console.info('session_request', event);
 
       if (SUPPORTED_METHOD_SET.has(event.params.request.method)) {
+        this.emitPendingSessionRequestUpdate();
+      } else {
         void this.rejectSessionRequest(
           event,
           getSdkError('UNSUPPORTED_METHODS'),
         );
-        return;
-      } else {
-        this.emitPendingSessionRequestUpdate();
       }
 
       void walletKit.extendSession({
