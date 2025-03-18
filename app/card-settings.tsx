@@ -118,7 +118,7 @@ export default function CardSettingsScreen(): ReactNode {
           </List.Section>
         )}
       </ScrollView>
-      <View style={{margin: 16, position: 'fixed', gap: 8}}>
+      <View style={{margin: 16, gap: 8}}>
         <AsyncButton
           mode="contained"
           handler={() => changeAccessCode(card.cardId)}

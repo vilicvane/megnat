@@ -62,7 +62,7 @@ export default function ImportCreateWalletScreen(): ReactNode {
           </AsyncButton>
         </View>
       </ScrollView>
-      <View style={{margin: 16, position: 'fixed'}}>
+      <View style={{margin: 16}}>
         <AsyncButton
           mode="contained"
           disabled={!valid}

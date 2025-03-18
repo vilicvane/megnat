@@ -130,7 +130,7 @@ export default function IndexScreen(): ReactNode {
           })}
         </List.Section>
       </ScrollView>
-      <View style={{margin: 16, position: 'fixed'}}>
+      <View style={{margin: 16}}>
         <Button
           mode="contained"
           disabled={pendingSessionRequests.length === 0}

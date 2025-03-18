@@ -113,7 +113,7 @@ export default function WalletAccountScreen(): ReactNode {
           </List.Section>
         )}
       </ScrollView>
-      <View style={{margin: 16, position: 'fixed'}}>
+      <View style={{margin: 16}}>
         <AsyncButton
           mode="contained"
           handler={async () => {
