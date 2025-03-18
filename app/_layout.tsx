@@ -8,6 +8,8 @@ import {setUnhandledPromiseRejectionTracker} from 'react-native-promise-rejectio
 import {EntrancesContext, createEntrances} from '../entrances.js';
 import {useAsyncValue} from '../hooks/index.js';
 
+void SplashScreen.preventAutoHideAsync();
+
 LogBox.ignoreAllLogs();
 
 setUnhandledPromiseRejectionTracker((_id, error) => {
