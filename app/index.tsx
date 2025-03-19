@@ -1,11 +1,24 @@
 /* eslint-disable @mufan/scoped-modules */
 
 import {router} from 'expo-router';
+import {openBrowserAsync} from 'expo-web-browser';
 import {type ReactNode, useMemo} from 'react';
-import {Alert, Image, ScrollView, View} from 'react-native';
-import {Appbar, Badge, Button, List, Menu, Text} from 'react-native-paper';
+import {Alert, Image, Pressable, ScrollView, View} from 'react-native';
+import {
+  Appbar,
+  Badge,
+  Button,
+  Divider,
+  List,
+  Menu,
+  Text,
+} from 'react-native-paper';
 
-import {NEW_CARD_BACKUP_NEEDED_FOR_ACCESS_CODE_MESSAGE} from '../constants/index.js';
+import {
+  MEGNAT_REFERRAL_URL,
+  MEGNAT_URL,
+  NEW_CARD_BACKUP_NEEDED_FOR_ACCESS_CODE_MESSAGE,
+} from '../constants/index.js';
 import {useEntrances} from '../entrances.js';
 import {useVisibleOpenClose} from '../hooks/index.js';
 import type {UIService, WalletStorageService} from '../services/index.js';
@@ -46,11 +59,13 @@ export default function IndexScreen(): ReactNode {
       <Appbar.Header>
         <Appbar.Content
           title={
-            <View
+            <Pressable
               style={{
+                marginRight: 'auto',
                 flexDirection: 'row',
                 alignItems: 'center',
               }}
+              onPress={() => void openBrowserAsync(MEGNAT_URL)}
             >
               <Image
                 source={require('../assets/images/compact-icon.png')} // Add your image source here
@@ -62,7 +77,7 @@ export default function IndexScreen(): ReactNode {
               <Text variant="titleLarge" style={{marginLeft: 12}}>
                 megnat
               </Text>
-            </View>
+            </Pressable>
           }
         />
         <Menu
@@ -97,6 +112,16 @@ export default function IndexScreen(): ReactNode {
               router.push('/import-wallet');
             }}
           />
+          <Divider style={{marginVertical: 6}} />
+          <Menu.Item
+            title="Referral link"
+            leadingIcon="ticket-percent-outline"
+            onPress={() => {
+              addMenu.close();
+
+              void openBrowserAsync(MEGNAT_REFERRAL_URL);
+            }}
+          />
         </Menu>
         <Menu
           visible={settingsMenu.visible}
@@ -122,6 +147,12 @@ export default function IndexScreen(): ReactNode {
 
               void scanCard(uiService);
             }}
+          />
+          <Divider style={{marginVertical: 6}} />
+          <Menu.Item
+            title="About"
+            leadingIcon="information-outline"
+            onPress={() => router.push('/about')}
           />
         </Menu>
       </Appbar.Header>
