@@ -4,6 +4,11 @@
   "options": {
     "name": "megnat",
     "author": "vilicvane",
+    "repository": "https://github.com/vilicvane/megnat.git",
+    "badges": {
+      "discord": "https://discord.gg/mEFzC6JRNg",
+      "repo": true
+    },
     "defaultBranch": "master",
     "packageManager": "pnpm",
     "type": "module",

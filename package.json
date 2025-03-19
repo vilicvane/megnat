@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "main": "expo-router/entry",
+  "repository": "https://github.com/vilicvane/megnat.git",
   "author": "vilicvane",
   "type": "module",
   "scripts": {
