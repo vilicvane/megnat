@@ -11,6 +11,7 @@ import {
   type WalletKitService,
   useChainDisplayName,
 } from '../../services/index.js';
+import {useTheme} from '../../theme.js';
 import {AsyncButton, ListItemWithDescriptionBlock} from '../ui/index.js';
 
 export type SignTypedDataProps = {
@@ -18,6 +19,8 @@ export type SignTypedDataProps = {
 };
 
 export function SignTypedData({request}: SignTypedDataProps): ReactNode {
+  const theme = useTheme();
+
   const {chainService, walletKitService, walletStorageService} = useEntrances();
 
   const {
@@ -62,7 +65,8 @@ export function SignTypedData({request}: SignTypedDataProps): ReactNode {
           }}
         >
           <AsyncButton
-            mode="elevated"
+            mode="contained"
+            buttonColor={theme.colors.secondary}
             style={{flex: 1, flexBasis: 0}}
             handler={() => reject(walletKitService, request)}
           >

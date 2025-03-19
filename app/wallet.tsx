@@ -2,7 +2,7 @@ import {router, useLocalSearchParams} from 'expo-router';
 import type {ReactNode} from 'react';
 import React, {useRef, useState} from 'react';
 import {Alert, ScrollView, View} from 'react-native';
-import {Appbar, List, Menu, useTheme} from 'react-native-paper';
+import {Appbar, List, Menu} from 'react-native-paper';
 
 import {
   AsyncButton,
@@ -19,6 +19,7 @@ import {
   DERIVATION_PATH_PATTERN,
   tangem,
 } from '../tangem.js';
+import {useTheme} from '../theme.js';
 
 export default function WalletScreen(): ReactNode {
   const {walletPublicKey} = useLocalSearchParams<{walletPublicKey: string}>();
@@ -87,7 +88,7 @@ export default function WalletScreen(): ReactNode {
               left={({style}) => (
                 <List.Icon
                   icon={itemIcon}
-                  color={theme.colors.primary}
+                  color={theme.colors.listIcon}
                   style={{...style, alignSelf: 'center'}}
                 />
               )}

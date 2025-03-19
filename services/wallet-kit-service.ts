@@ -372,3 +372,9 @@ export function useWalletKitPendingSessionRequests(
 
   return requests;
 }
+
+export function getSessionDisplayName(session: SessionTypes.Struct): string {
+  return (
+    session.peer.metadata.name || new URL(session.peer.metadata.url).hostname
+  );
+}

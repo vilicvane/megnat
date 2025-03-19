@@ -17,6 +17,7 @@ import {
   type WalletKitService,
   useChainDisplayName,
 } from '../../services/index.js';
+import {useTheme} from '../../theme.js';
 import {eip155ChainIdToBigInt} from '../../utils/index.js';
 import {AsyncButton, ListItemWithDescriptionBlock} from '../ui/index.js';
 
@@ -25,6 +26,8 @@ export type SendTransactionProps = {
 };
 
 export function SendTransaction({request}: SendTransactionProps): ReactNode {
+  const theme = useTheme();
+
   const {chainService, walletKitService, walletStorageService} = useEntrances();
 
   const {
@@ -126,7 +129,8 @@ export function SendTransaction({request}: SendTransactionProps): ReactNode {
           }}
         >
           <AsyncButton
-            mode="elevated"
+            mode="contained"
+            buttonColor={theme.colors.secondary}
             style={{flex: 1, flexBasis: 0}}
             handler={() => reject(walletKitService, request)}
           >

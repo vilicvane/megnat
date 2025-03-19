@@ -9,6 +9,8 @@ import {useEntrances} from '../entrances.js';
 import {useChainDisplayName, useCustomChains} from '../services/index.js';
 import {useTheme} from '../theme.js';
 
+const INFURA_KEY_PATTERN = /^(?:|[\da-f]{32})$/;
+
 export default function ChainSettingsScreen(): ReactNode {
   const {chainService} = useEntrances();
 
@@ -33,6 +35,7 @@ export default function ChainSettingsScreen(): ReactNode {
               mode="outlined"
               label="Infura key"
               initialValue={infuraKey}
+              pattern={INFURA_KEY_PATTERN}
               onFocus={() => setInfuraKeyInputActive(true)}
               onBlur={() => setInfuraKeyInputActive(false)}
               handler={key => chainService.setInfuraKey(key)}
@@ -70,7 +73,7 @@ function ChainItem({chain}: {chain: CustomChain}): ReactNode {
   return (
     <List.Item
       left={({style}) => (
-        <List.Icon icon="web" color={theme.colors.primary} style={style} />
+        <List.Icon icon="web" color={theme.colors.listIcon} style={style} />
       )}
       title={name}
       description={chain.id}

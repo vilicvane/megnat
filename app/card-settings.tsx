@@ -7,9 +7,13 @@ import {Appbar, List} from 'react-native-paper';
 import {AsyncButton, AsyncIconButton, confirm} from '../components/ui/index.js';
 import {useEntrances} from '../entrances.js';
 import {useRefresh} from '../hooks/index.js';
+import type {TangemScanResponse} from '../tangem.js';
 import {tangem, tangemWalletToWallet} from '../tangem.js';
+import {useTheme} from '../theme.js';
 
 export default function CardSettingsScreen(): ReactNode {
+  const theme = useTheme();
+
   const {uiService} = useEntrances();
 
   const refresh = useRefresh();
@@ -98,20 +102,16 @@ export default function CardSettingsScreen(): ReactNode {
                   right={({style}) => (
                     <AsyncIconButton
                       style={{...style, marginRight: -16}}
-                      icon="delete-alert"
-                      handler={async () => {
-                        await purgeWallet(
-                          card.cardId,
+                      icon="delete-alert-outline"
+                      iconColor={theme.colors.secondary}
+                      handler={() =>
+                        purgeWallet(
+                          card,
                           oneAddress,
                           tangemWallet.publicKey,
-                        );
-
-                        card.wallets = card.wallets.filter(
-                          wallet => wallet.publicKey !== tangemWallet.publicKey,
-                        );
-
-                        refresh();
-                      }}
+                          refresh,
+                        )
+                      }
                     />
                   )}
                 />
@@ -129,12 +129,9 @@ export default function CardSettingsScreen(): ReactNode {
         </AsyncButton>
         <AsyncButton
           mode="elevated"
+          textColor={theme.colors.secondary}
           handler={async () => {
-            await purgeAllWallets(card.cardId);
-
-            card.wallets = [];
-
-            refresh();
+            await purgeAllWallets(card, refresh);
           }}
         >
           Purge all wallets
@@ -145,9 +142,10 @@ export default function CardSettingsScreen(): ReactNode {
 }
 
 async function purgeWallet(
-  cardId: string,
+  card: TangemScanResponse,
   address: string | undefined,
   walletPublicKey: string,
+  onChange: () => void,
 ): Promise<void> {
   const identifier = address
     ? `an address starts with ${address.slice(0, 8)}`
@@ -156,7 +154,10 @@ async function purgeWallet(
   const confirmed = await new Promise(resolve =>
     Alert.alert(
       'Purge wallet',
-      `Are you sure you want to purge the wallet of which ${identifier} on card ${cardId}?`,
+      `\
+Are you sure you want to purge the wallet of which ${identifier} on card ${card.cardId}?
+
+Keys of this wallet on the card will be ERASED!`,
       [
         {
           text: 'Purge',
@@ -172,18 +173,27 @@ async function purgeWallet(
     return;
   }
 
-  await tangem.purgeWallet({cardId, walletPublicKey});
+  await tangem.purgeWallet({cardId: card.cardId, walletPublicKey});
+
+  card.wallets = card.wallets.filter(
+    wallet => wallet.publicKey !== walletPublicKey,
+  );
+
+  onChange();
 }
 
 async function changeAccessCode(cardId: string): Promise<void> {
   await tangem.setAccessCode({cardId});
 }
 
-async function purgeAllWallets(cardId: string): Promise<void> {
+async function purgeAllWallets(
+  card: TangemScanResponse,
+  onChange: () => void,
+): Promise<void> {
   if (
     !(await confirm(
       'Purge all wallets',
-      `You are going to purge all wallets on card ${cardId}, all wallets on this card will be lost.`,
+      `You are going to purge all wallets on card ${card.cardId}, ALL keys of ALL wallets on the card will be ERASED!`,
     ))
   ) {
     return;
@@ -192,7 +202,7 @@ async function purgeAllWallets(cardId: string): Promise<void> {
   if (
     !(await confirm(
       'Double check',
-      `Please confirm the card id ${cardId}, are you sure you want to purge all wallets on this card?`,
+      `Please confirm the card id ${card.cardId}, are you sure you want to purge all wallets on this card?`,
       'Purge',
       true,
     ))
@@ -200,10 +210,14 @@ async function purgeAllWallets(cardId: string): Promise<void> {
     return;
   }
 
-  await tangem.purgeAllWallets({cardId});
+  await tangem.purgeAllWallets({cardId: card.cardId});
+
+  card.wallets = [];
 
   Alert.alert(
     'Success',
-    `All wallets on card ${cardId} have been purged successfully.`,
+    `All wallets on card ${card.cardId} have been purged successfully.`,
   );
+
+  onChange();
 }

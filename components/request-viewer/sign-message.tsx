@@ -13,6 +13,7 @@ import {
   type WalletKitService,
   useChainDisplayName,
 } from '../../services/index.js';
+import {useTheme} from '../../theme.js';
 import {isValidUTF8} from '../../utils/index.js';
 import {AsyncButton, ListItemWithDescriptionBlock} from '../ui/index.js';
 
@@ -21,6 +22,8 @@ export type SignMessageProps = {
 };
 
 export function SignMessage({request}: SignMessageProps): ReactNode {
+  const theme = useTheme();
+
   const {chainService, walletKitService, walletStorageService} = useEntrances();
 
   const {
@@ -72,7 +75,8 @@ export function SignMessage({request}: SignMessageProps): ReactNode {
           }}
         >
           <AsyncButton
-            mode="elevated"
+            mode="contained"
+            buttonColor={theme.colors.secondary}
             style={{flex: 1, flexBasis: 0}}
             handler={() => reject(walletKitService, request)}
           >

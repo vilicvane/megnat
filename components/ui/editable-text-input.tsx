@@ -7,6 +7,7 @@ export type EditableTextInputProps = TextInputProps & {
   initialValue: string;
   handler?: (text: string) => Promise<void> | void;
   savingEnabled?: boolean;
+  pattern?: RegExp;
 };
 
 export function EditableTextInput({
@@ -15,6 +16,7 @@ export function EditableTextInput({
   onBlur,
   handler,
   savingEnabled = false,
+  pattern,
   ...props
 }: EditableTextInputProps): ReactNode {
   const [text, setText] = useState(() => {
@@ -24,15 +26,13 @@ export function EditableTextInput({
 
   const [saving, setSaving] = useState(false);
 
+  const error = pattern ? !pattern.test(text) : false;
+
   return (
     <TextInput
       {...props}
       value={text}
-      right={
-        savingEnabled && saving ? (
-          <TextInput.Icon icon="loading" loading />
-        ) : undefined
-      }
+      error={error}
       onChangeText={text => {
         onChangeText?.(text);
         setText(text);
@@ -40,7 +40,7 @@ export function EditableTextInput({
       onBlur={event => {
         onBlur?.(event);
 
-        if (!handler || text === initialValue) {
+        if (!handler || text === initialValue || error) {
           return;
         }
 
@@ -54,6 +54,11 @@ export function EditableTextInput({
           });
         }
       }}
+      right={
+        savingEnabled && saving ? (
+          <TextInput.Icon icon="loading" loading />
+        ) : undefined
+      }
     />
   );
 }

@@ -8,12 +8,18 @@ import {
   QRCodeInputModal,
   useQRCodeInputModalProps,
 } from '../components/qrcode-input-modal.js';
-import {AsyncButton, AsyncIconButton} from '../components/ui/index.js';
+import {
+  AsyncButton,
+  AsyncIconButton,
+  DateFromNow,
+  ListIconClockTicking,
+} from '../components/ui/index.js';
 import {RPC_METHOD_DISPLAY_NAME} from '../constants/index.js';
 import {useEntrances} from '../entrances.js';
 import type {UIService, WalletKitService} from '../services/index.js';
 import {
   SUPPORTED_METHOD_SET,
+  getSessionDisplayName,
   useWalletKitPendingSessionRequests,
   useWalletKitSessions,
 } from '../services/index.js';
@@ -64,24 +70,47 @@ export default function WalletAccountScreen(): ReactNode {
         </List.Section>
         {pendingSessionRequests.length > 0 && (
           <List.Section title="Pending requests">
-            {pendingSessionRequests.map(({request}) => (
+            {pendingSessionRequests.map(({request, session}) => (
               <List.Item
                 key={request.id}
-                title={RPC_METHOD_DISPLAY_NAME(request.params.request.method)}
-                description={request.id}
+                left={({style}) => (
+                  <ListIconClockTicking
+                    color={theme.colors.onPrimary}
+                    style={style}
+                  />
+                )}
+                title={getSessionDisplayName(session)}
+                description={
+                  <View
+                    style={{
+                      width: '100%',
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <Text style={{color: theme.colors.info}}>
+                      {RPC_METHOD_DISPLAY_NAME(request.params.request.method)}
+                    </Text>
+                    {request.params.request.expiryTimestamp && (
+                      <DateFromNow
+                        date={
+                          new Date(
+                            request.params.request.expiryTimestamp * 1000,
+                          )
+                        }
+                        style={{
+                          color: theme.colors.onSurfaceVariant,
+                        }}
+                      />
+                    )}
+                  </View>
+                }
                 onPress={() => {
                   router.push({
                     pathname: '/view-request',
                     params: {requestId: request.id},
                   });
                 }}
-                left={({style}) => (
-                  <List.Icon
-                    icon="clock"
-                    color={theme.colors.primary}
-                    style={style}
-                  />
-                )}
               />
             ))}
           </List.Section>
@@ -100,20 +129,17 @@ export default function WalletAccountScreen(): ReactNode {
                   left={({style}) => (
                     <List.Icon
                       icon="web"
-                      color={theme.colors.primary}
+                      color={theme.colors.listIcon}
                       style={style}
                     />
                   )}
                   title={
                     <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                      <Text>
-                        {session.peer.metadata.name ||
-                          new URL(session.peer.metadata.url).hostname}
-                      </Text>
+                      <Text>{getSessionDisplayName(session)}</Text>
                       {unsupported && (
                         <IconButton
                           icon="alert-circle"
-                          iconColor={theme.colors.alert}
+                          iconColor={theme.colors.warning}
                           size={16}
                           style={{
                             margin: 0,

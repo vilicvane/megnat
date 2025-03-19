@@ -3,15 +3,7 @@
 import {router} from 'expo-router';
 import {type ReactNode, useMemo} from 'react';
 import {Alert, Image, ScrollView, View} from 'react-native';
-import {
-  Appbar,
-  Badge,
-  Button,
-  List,
-  Menu,
-  Text,
-  useTheme,
-} from 'react-native-paper';
+import {Appbar, Badge, Button, List, Menu, Text} from 'react-native-paper';
 
 import {NEW_CARD_BACKUP_NEEDED_FOR_ACCESS_CODE_MESSAGE} from '../constants/index.js';
 import {useEntrances} from '../entrances.js';
@@ -26,6 +18,7 @@ import {
   tangemWalletToWallet,
   tangemWalletsToWallets,
 } from '../tangem.js';
+import {useTheme} from '../theme.js';
 
 export default function IndexScreen(): ReactNode {
   const theme = useTheme();
@@ -143,7 +136,17 @@ export default function IndexScreen(): ReactNode {
               return (
                 <List.Accordion
                   key={wallet.publicKey}
-                  left={props => <List.Icon {...props} icon={accordionIcon} />}
+                  left={({color, style}) => (
+                    <List.Icon
+                      icon={accordionIcon}
+                      color={
+                        color === theme.colors.primary
+                          ? theme.colors.onPrimary
+                          : color
+                      }
+                      style={style}
+                    />
+                  )}
                   title={wallet.name}
                   titleStyle={{color: theme.colors.onBackground}}
                   onLongPress={() => {
@@ -157,10 +160,10 @@ export default function IndexScreen(): ReactNode {
                     <List.Item
                       key={index}
                       style={{marginLeft: 8}}
-                      left={({style}) => (
+                      left={({color, style}) => (
                         <List.Icon
                           icon={addressIcon}
-                          color={theme.colors.primary}
+                          color={color}
                           style={{...style, alignSelf: 'center'}}
                         />
                       )}

@@ -16,10 +16,12 @@ import type {
   PendingSessionAuthentication,
   WalletKitService,
 } from '../services/index.js';
+import {useTheme} from '../theme.js';
 
 export default function SessionAuthenticateScreen(): ReactNode {
-  const {walletKitService, walletStorageService, uiService} = useEntrances();
+  const theme = useTheme();
 
+  const {walletKitService, walletStorageService, uiService} = useEntrances();
   const [authentication] = useState(() => {
     const authentication = uiService.state.pendingSessionAuthentication;
 
@@ -77,7 +79,8 @@ export default function SessionAuthenticateScreen(): ReactNode {
         }}
       >
         <AsyncButton
-          mode="elevated"
+          mode="contained"
+          buttonColor={theme.colors.secondary}
           style={{flex: 1, flexBasis: 0}}
           handler={() => reject(walletKitService, authentication)}
         >

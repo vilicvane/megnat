@@ -26,6 +26,7 @@
     "@walletconnect/react-native-compat": "^2.19.1",
     "@walletconnect/types": "^2.19.1",
     "@walletconnect/utils": "^2.19.1",
+    "dayjs": "^1.11.13",
     "ethers": "^6.13.5",
     "expo": "^52.0.39",
     "expo-blur": "^14.0.3",
