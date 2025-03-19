@@ -62,13 +62,11 @@ export default function IndexScreen(): ReactNode {
               <Image
                 source={require('../assets/images/compact-icon.png')} // Add your image source here
                 style={{
-                  marginLeft: -8,
-                  marginRight: 8,
-                  width: 48,
-                  height: 48,
+                  width: 30,
+                  height: 30,
                 }}
               />
-              <Text variant="titleLarge" style={{marginTop: 0}}>
+              <Text variant="titleLarge" style={{marginLeft: 12}}>
                 megnat
               </Text>
             </View>
