@@ -99,7 +99,6 @@ export default function WalletScreen(): ReactNode {
                         style={{
                           ...style,
                           alignSelf: 'center',
-                          marginRight: -16,
                         }}
                         icon="close"
                         handler={async () => {
