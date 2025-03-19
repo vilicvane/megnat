@@ -38,7 +38,9 @@ export default {
   extra: {
     build: {
       date: Date.now(),
-      sha: execSync('git rev-parse --short HEAD').toString().trim(),
+      sha:
+        process.env.GITHUB_SHA?.slice(0, 7) ||
+        execSync('git rev-parse --short HEAD').toString().trim(),
     },
   },
 } satisfies ExpoConfig;
