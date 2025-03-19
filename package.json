@@ -1,7 +1,6 @@
 {
   "name": "megnat",
   "version": "0.0.0",
-  "repository": "https://github.com/vilicvane/megnat",
   "author": "vilicvane",
   "type": "module",
   "scripts": {
