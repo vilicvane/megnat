@@ -2,7 +2,7 @@ import {buildAuthObject} from '@walletconnect/utils';
 import {router} from 'expo-router';
 import type {ReactNode} from 'react';
 import React, {useEffect, useState} from 'react';
-import {Alert, ScrollView, View} from 'react-native';
+import {ScrollView, ToastAndroid, View} from 'react-native';
 import {Appbar, List} from 'react-native-paper';
 
 import {
@@ -142,10 +142,7 @@ async function sign(
 
   await walletKitService.completeSessionAuthentication(authentication.id, auth);
 
-  Alert.alert(
-    'Session authenticated',
-    'The session has been authenticated successfully, please proceed within the dApp.',
-  );
+  ToastAndroid.show('Session authenticated', ToastAndroid.SHORT);
 
   router.back();
 }

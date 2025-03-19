@@ -1,7 +1,7 @@
 import type {PendingRequestTypes} from '@walletconnect/types';
 import {router} from 'expo-router';
 import type {ReactNode} from 'react';
-import {Alert, ScrollView, View} from 'react-native';
+import {ScrollView, ToastAndroid, View} from 'react-native';
 import {Appbar, List} from 'react-native-paper';
 
 import type {Wallet, WalletDerivation} from '../../core/index.js';
@@ -126,10 +126,7 @@ async function sign(
 
   await walletKitService.completeSessionRequest(request, signature);
 
-  Alert.alert(
-    'Typed data signed',
-    'The typed data has been signed successfully, please proceed within the dApp.',
-  );
+  ToastAndroid.show('Typed data signed', ToastAndroid.SHORT);
 
   router.back();
 }
