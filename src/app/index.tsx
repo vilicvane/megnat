@@ -236,29 +236,50 @@ export default function IndexScreen(): ReactNode {
           </View>
         )}
       </ScrollView>
-      <View style={{margin: 16}}>
-        <Button
-          mode="contained"
-          disabled={pendingSessionRequests.length === 0}
-          onPress={() => {
-            router.push({
-              pathname: '/view-request',
-              params: {requestId: pendingSessionRequests[0].request.id},
-            });
-          }}
-        >
-          {pendingSessionRequests.length > 1
-            ? 'View next pending request'
-            : pendingSessionRequests.length > 0
-              ? 'View pending request'
-              : 'No pending requests'}
-        </Button>
-        {pendingSessionRequests.length > 1 && (
-          <Badge style={{position: 'absolute', top: -8, right: 0}}>
-            {pendingSessionRequests.length}
-          </Badge>
-        )}
-      </View>
+      {(pendingSessionRequests.length > 0 || wallets.length > 0) && (
+        <View style={{margin: 16, gap: 8}}>
+          <View>
+            {pendingSessionRequests.length > 0 && (
+              <Button
+                mode="contained"
+                disabled={pendingSessionRequests.length === 0}
+                onPress={() => {
+                  router.push({
+                    pathname: '/view-request',
+                    params: {requestId: pendingSessionRequests[0].request.id},
+                  });
+                }}
+              >
+                {pendingSessionRequests.length > 1
+                  ? 'View next pending request'
+                  : pendingSessionRequests.length > 0
+                    ? 'View pending request'
+                    : 'No pending requests'}
+              </Button>
+            )}
+            {pendingSessionRequests.length > 1 && (
+              <Badge
+                style={{
+                  position: 'absolute',
+                  top: -8,
+                  right: 0,
+                  backgroundColor: theme.colors.secondary,
+                  color: theme.colors.onSecondary,
+                }}
+              >
+                {pendingSessionRequests.length}
+              </Badge>
+            )}
+          </View>
+          <Button
+            mode="contained"
+            buttonColor={theme.colors.surfaceVariant}
+            onPress={() => router.push('/connect')}
+          >
+            Connect
+          </Button>
+        </View>
+      )}
     </>
   );
 }

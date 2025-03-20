@@ -32,7 +32,7 @@ export const SUPPORTED_METHOD_SET = new Set(SUPPORTED_METHODS);
 export class WalletKitService {
   private pendingSession:
     | {
-        address: string;
+        addresses: string[];
         resolve: (message: PendingSessionAuthentication | void) => void;
         reject: (error: Error) => void;
       }
@@ -50,9 +50,9 @@ export class WalletKitService {
 
       this.pendingSession = undefined;
 
-      const {address, resolve, reject} = pendingSession;
+      const {addresses, resolve, reject} = pendingSession;
 
-      void this.handleSessionProposal(event, address).then(resolve, reject);
+      void this.handleSessionProposal(event, addresses).then(resolve, reject);
     });
 
     walletKit.on('session_authenticate', event => {
@@ -66,9 +66,12 @@ export class WalletKitService {
 
       this.pendingSession = undefined;
 
-      const {address, resolve, reject} = pendingSession;
+      const {addresses, resolve, reject} = pendingSession;
 
-      void this.handleSessionAuthenticate(event, address).then(resolve, reject);
+      void this.handleSessionAuthenticate(event, addresses[0]).then(
+        resolve,
+        reject,
+      );
     });
 
     walletKit.on('session_request', event => {
@@ -109,11 +112,11 @@ export class WalletKitService {
 
   async connect(
     uri: string,
-    address: string,
+    addresses: string[],
   ): Promise<PendingSessionAuthentication | void> {
     const promise = new Promise<PendingSessionAuthentication | void>(
       (resolve, reject) => {
-        this.pendingSession = {address, resolve, reject};
+        this.pendingSession = {addresses, resolve, reject};
       },
     );
 
@@ -238,7 +241,7 @@ export class WalletKitService {
 
   private async handleSessionProposal(
     {id, params}: SignClientTypes.EventArguments['session_proposal'],
-    address: string,
+    addresses: string[],
   ): Promise<void> {
     const chains = Array.from(
       new Set([
@@ -280,7 +283,9 @@ export class WalletKitService {
           chains,
           methods,
           events,
-          accounts: chains.map(chain => `${chain}:${address}`),
+          accounts: addresses.flatMap(address =>
+            chains.map(chain => `${chain}:${address}`),
+          ),
         },
       },
     });
@@ -425,6 +430,26 @@ export function useWalletKitPendingSessionRequests(
   }
 
   return requests;
+}
+
+export function useWalletKitSessionPendingRequests(
+  service: WalletKitService,
+  session: SessionTypes.Struct | undefined,
+): PendingRequestTypes.Struct[] {
+  const refresh = useRefresh();
+
+  useEffect(
+    () => service.pendingSessionRequestUpdate.on(refresh),
+    [refresh, service],
+  );
+
+  if (!session) {
+    return [];
+  }
+
+  return service
+    .getPendingSessionRequests()
+    .filter(request => request.topic === session.topic);
 }
 
 export function getSessionDisplayName(session: SessionTypes.Struct): string {

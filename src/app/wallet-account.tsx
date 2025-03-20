@@ -2,32 +2,24 @@ import * as Clipboard from 'expo-clipboard';
 import {router, useLocalSearchParams} from 'expo-router';
 import type {ReactNode} from 'react';
 import {ScrollView, ToastAndroid, View} from 'react-native';
-import {Appbar, List, Text} from 'react-native-paper';
+import {Appbar, List} from 'react-native-paper';
 
+import {PendingRequestList} from '../components/pending-request-list.js';
 import {
   QRCodeInputModal,
   useQRCodeInputModalProps,
 } from '../components/qrcode-input-modal.js';
 import {SessionList} from '../components/session-list.js';
-import {
-  AsyncButton,
-  DateFromNow,
-  ListIconClockTicking,
-} from '../components/ui/index.js';
-import {RPC_METHOD_DISPLAY_NAME} from '../constants/index.js';
+import {AsyncButton} from '../components/ui/index.js';
 import {useEntrances} from '../entrances.js';
 import type {UIService, WalletKitService} from '../services/index.js';
 import {
-  getSessionDisplayName,
   useWalletKitPendingSessionRequests,
   useWalletKitSessions,
 } from '../services/index.js';
-import {useTheme} from '../theme.js';
 
 export default function WalletAccountScreen(): ReactNode {
   const {address} = useLocalSearchParams<{address: string}>();
-
-  const theme = useTheme();
 
   const {walletKitService, uiService, walletStorageService} = useEntrances();
 
@@ -68,51 +60,7 @@ export default function WalletAccountScreen(): ReactNode {
           )}
         </List.Section>
         {pendingSessionRequests.length > 0 && (
-          <List.Section title="Pending requests">
-            {pendingSessionRequests.map(({request, session}) => (
-              <List.Item
-                key={request.id}
-                left={({style}) => (
-                  <ListIconClockTicking
-                    color={theme.colors.onPrimary}
-                    style={style}
-                  />
-                )}
-                title={getSessionDisplayName(session)}
-                description={
-                  <View
-                    style={{
-                      width: '100%',
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                    }}
-                  >
-                    <Text style={{color: theme.colors.info}}>
-                      {RPC_METHOD_DISPLAY_NAME(request.params.request.method)}
-                    </Text>
-                    {request.params.request.expiryTimestamp && (
-                      <DateFromNow
-                        date={
-                          new Date(
-                            request.params.request.expiryTimestamp * 1000,
-                          )
-                        }
-                        style={{
-                          color: theme.colors.onSurfaceVariant,
-                        }}
-                      />
-                    )}
-                  </View>
-                }
-                onPress={() => {
-                  router.push({
-                    pathname: '/view-request',
-                    params: {requestId: request.id},
-                  });
-                }}
-              />
-            ))}
-          </List.Section>
+          <PendingRequestList pendingSessionRequests={pendingSessionRequests} />
         )}
         {sessions.length > 0 && <SessionList sessions={sessions} />}
       </ScrollView>
@@ -148,7 +96,7 @@ async function connect(
   uri: string,
   address: string,
 ): Promise<void> {
-  const message = await walletKitService.connect(uri, address);
+  const message = await walletKitService.connect(uri, [address]);
 
   if (!message) {
     ToastAndroid.show('Session connected', ToastAndroid.SHORT);

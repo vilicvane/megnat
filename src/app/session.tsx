@@ -5,12 +5,14 @@ import {useEffect, useMemo, useState} from 'react';
 import {ScrollView, ToastAndroid, View} from 'react-native';
 import {Appbar, Badge, Checkbox, List} from 'react-native-paper';
 
+import {PendingRequestList} from '../components/pending-request-list.js';
 import {AsyncButton, AsyncIconButton} from '../components/ui/index.js';
 import {useEntrances} from '../entrances.js';
 import type {WalletKitService} from '../services/index.js';
 import {
   getSessionDisplayName,
   useWalletKitSession,
+  useWalletKitSessionPendingRequests,
   useWallets,
 } from '../services/index.js';
 import {useTheme} from '../theme.js';
@@ -74,6 +76,20 @@ export default function SessionScreen(): ReactNode {
     [addressOverrideMap, sessionAddressSet, walletAddresses],
   );
 
+  const pendingRequests = useWalletKitSessionPendingRequests(
+    walletKitService,
+    session,
+  );
+
+  const pendingSessionRequests = session
+    ? pendingRequests.map(request => {
+        return {
+          session,
+          request,
+        };
+      })
+    : [];
+
   const ableToUpdate =
     addressOverrideMap.size > 0 && selectedAddresses.length > 0;
 
@@ -94,125 +110,130 @@ export default function SessionScreen(): ReactNode {
             description={session.peer.metadata.url}
           />
         </List.Section>
-        {wallets.map(wallet => {
-          const checked = wallet.derivations.filter(
-            derivation =>
-              addressOverrideMap.get(derivation.address) ??
-              sessionAddressSet.has(derivation.address),
-          ).length;
+        {pendingSessionRequests.length > 0 && (
+          <PendingRequestList pendingSessionRequests={pendingSessionRequests} />
+        )}
+        <List.Section title="Wallets">
+          {wallets.map(wallet => {
+            const checked = wallet.derivations.filter(
+              derivation =>
+                addressOverrideMap.get(derivation.address) ??
+                sessionAddressSet.has(derivation.address),
+            ).length;
 
-          const overridden = wallet.derivations.some(derivation =>
-            addressOverrideMap.has(derivation.address),
-          );
+            const overridden = wallet.derivations.some(derivation =>
+              addressOverrideMap.has(derivation.address),
+            );
 
-          return (
-            <List.Accordion
-              key={wallet.publicKey}
-              left={({color, style}) => (
-                <List.Icon
-                  icon={wallet.chainCode ? 'key-link' : 'key'}
-                  color={
-                    color === theme.colors.primary
-                      ? theme.colors.onPrimary
-                      : color
-                  }
-                  style={style}
-                />
-              )}
-              title={wallet.name}
-              titleStyle={{color: theme.colors.onSurface}}
-              right={({isExpanded}) => (
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                  {(checked > 0 || overridden) && (
-                    <Badge
-                      size={24}
-                      style={[
-                        {
-                          alignSelf: 'center',
-                          marginRight: 12,
-                        },
-                        overridden
-                          ? {
-                              backgroundColor: theme.colors.primary,
-                              color: theme.colors.onPrimary,
-                            }
-                          : {
-                              backgroundColor: theme.colors.elevation.level2,
-                              color: theme.colors.onSurface,
-                            },
-                      ]}
-                    >
-                      {checked}
-                    </Badge>
-                  )}
+            return (
+              <List.Accordion
+                key={wallet.publicKey}
+                left={({color, style}) => (
                   <List.Icon
-                    icon={isExpanded ? 'chevron-up' : 'chevron-down'}
-                    color={theme.colors.onSurfaceVariant}
+                    icon={wallet.chainCode ? 'key-link' : 'key'}
+                    color={
+                      color === theme.colors.primary
+                        ? theme.colors.onPrimary
+                        : color
+                    }
+                    style={style}
                   />
-                </View>
-              )}
-            >
-              {wallet.derivations.map(({path, address}) => {
-                const inSession = sessionAddressSet.has(address);
-
-                const checked = addressOverrideMap.get(address) ?? inSession;
-
-                const overridden = addressOverrideMap.has(address);
-
-                return (
-                  <List.Item
-                    key={address}
-                    style={{marginLeft: 8}}
-                    left={({style}) => (
-                      <View
-                        style={[style, {marginVertical: -8, marginRight: -8}]}
-                      >
-                        <Checkbox
-                          status={checked ? 'checked' : 'unchecked'}
-                          {...(overridden
+                )}
+                title={wallet.name}
+                titleStyle={{color: theme.colors.onSurface}}
+                right={({isExpanded}) => (
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    {(checked > 0 || overridden) && (
+                      <Badge
+                        size={24}
+                        style={[
+                          {
+                            alignSelf: 'center',
+                            marginRight: 12,
+                          },
+                          overridden
                             ? {
-                                color: theme.colors.primary,
-                                uncheckedColor: theme.colors.primary,
+                                backgroundColor: theme.colors.primary,
+                                color: theme.colors.onPrimary,
                               }
                             : {
+                                backgroundColor: theme.colors.elevation.level2,
                                 color: theme.colors.onSurface,
-                                uncheckedColor: theme.colors.onSurfaceVariant,
-                              })}
-                          onPress={() =>
-                            overrideAddress(
+                              },
+                        ]}
+                      >
+                        {checked}
+                      </Badge>
+                    )}
+                    <List.Icon
+                      icon={isExpanded ? 'chevron-up' : 'chevron-down'}
+                      color={theme.colors.onSurfaceVariant}
+                    />
+                  </View>
+                )}
+              >
+                {wallet.derivations.map(({path, address}) => {
+                  const inSession = sessionAddressSet.has(address);
+
+                  const checked = addressOverrideMap.get(address) ?? inSession;
+
+                  const overridden = addressOverrideMap.has(address);
+
+                  return (
+                    <List.Item
+                      key={address}
+                      style={{marginLeft: 8}}
+                      left={({style}) => (
+                        <View
+                          style={[style, {marginVertical: -8, marginRight: -8}]}
+                        >
+                          <Checkbox
+                            status={checked ? 'checked' : 'unchecked'}
+                            {...(overridden
+                              ? {
+                                  color: theme.colors.primary,
+                                  uncheckedColor: theme.colors.primary,
+                                }
+                              : {
+                                  color: theme.colors.onSurface,
+                                  uncheckedColor: theme.colors.onSurfaceVariant,
+                                })}
+                            onPress={() =>
+                              overrideAddress(
+                                sessionAddressSet,
+                                address,
+                                !checked,
+                                setAddressOverrideMap,
+                              )
+                            }
+                          />
+                        </View>
+                      )}
+                      title={address}
+                      titleEllipsizeMode="middle"
+                      description={path}
+                      right={({style}) => (
+                        <AsyncIconButton
+                          icon="swap-horizontal-circle"
+                          style={[style, {marginVertical: -8}]}
+                          handler={() =>
+                            switchSessionAccount(
+                              walletKitService,
+                              session,
                               sessionAddressSet,
                               address,
-                              !checked,
                               setAddressOverrideMap,
                             )
                           }
                         />
-                      </View>
-                    )}
-                    title={address}
-                    titleEllipsizeMode="middle"
-                    description={path}
-                    right={({style}) => (
-                      <AsyncIconButton
-                        icon="swap-horizontal-circle"
-                        style={[style, {marginVertical: -8}]}
-                        handler={() =>
-                          switchSessionAccount(
-                            walletKitService,
-                            session,
-                            sessionAddressSet,
-                            address,
-                            setAddressOverrideMap,
-                          )
-                        }
-                      />
-                    )}
-                  />
-                );
-              })}
-            </List.Accordion>
-          );
-        })}
+                      )}
+                    />
+                  );
+                })}
+              </List.Accordion>
+            );
+          })}
+        </List.Section>
         {unknownAddresses.length > 0 && (
           <List.Accordion
             title="Unknown addresses"

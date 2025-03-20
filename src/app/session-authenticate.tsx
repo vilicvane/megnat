@@ -69,39 +69,39 @@ export default function SessionAuthenticateScreen(): ReactNode {
             description={displayMessage}
           />
         </List.Section>
+        <View
+          style={{
+            margin: 16,
+            marginTop: 'auto',
+            flexDirection: 'row',
+            gap: 8,
+          }}
+        >
+          <AsyncButton
+            mode="contained"
+            buttonColor={theme.colors.secondary}
+            style={{flex: 1, flexBasis: 0}}
+            handler={() => reject(walletKitService, authentication)}
+          >
+            Reject
+          </AsyncButton>
+          <AsyncButton
+            mode="contained"
+            style={{flex: 1, flexBasis: 0}}
+            disabled={signDisabled}
+            handler={() =>
+              sign(
+                walletKitService,
+                wallet!.wallet,
+                wallet!.derivation,
+                authentication,
+              )
+            }
+          >
+            Sign
+          </AsyncButton>
+        </View>
       </ScrollView>
-      <View
-        style={{
-          margin: 16,
-          marginTop: 'auto',
-          flexDirection: 'row',
-          gap: 8,
-        }}
-      >
-        <AsyncButton
-          mode="contained"
-          buttonColor={theme.colors.secondary}
-          style={{flex: 1, flexBasis: 0}}
-          handler={() => reject(walletKitService, authentication)}
-        >
-          Reject
-        </AsyncButton>
-        <AsyncButton
-          mode="contained"
-          style={{flex: 1, flexBasis: 0}}
-          disabled={signDisabled}
-          handler={() =>
-            sign(
-              walletKitService,
-              wallet!.wallet,
-              wallet!.derivation,
-              authentication,
-            )
-          }
-        >
-          Sign
-        </AsyncButton>
-      </View>
     </>
   );
 }
