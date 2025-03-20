@@ -25,6 +25,6 @@ jobs:
       - uses: softprops/action-gh-release@v1
         with:
           files: android/app/build/outputs/apk/release/app-release.apk
-          name: Release ${{ github.ref_name.replace('release/', '') }}
+          name: Release ${{ replace(github.ref_name, 'release/', '') }}
           prerelease: ${{ contains(github.ref_name, '-') }}
           token: ${{ secrets.GITHUB_TOKEN }}
