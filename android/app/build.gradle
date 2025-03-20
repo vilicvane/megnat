@@ -102,24 +102,15 @@ android {
             keyPassword 'android'
         }
         release {
-            def keystoreBase64 = System.getenv("KEYSTORE_BASE64")
-            def keystorePassword = System.getenv("KEYSTORE_PASSWORD")
-            def keyAlias = System.getenv("KEY_ALIAS")
-            def keyPassword = System.getenv("KEY_PASSWORD")
+            def keystoreFile = new File("${project.buildDir}/keystore.jks")
 
-            if (keystoreBase64 != null && keystorePassword != null && keyAlias != null && keyPassword != null) {
-                def keystoreFile = new File("${project.buildDir}/keystore.jks")
+            keystoreFile.parentFile.mkdirs()
+            keystoreFile.bytes = System.getenv("KEYSTORE_BASE64").decodeBase64()
 
-                keystoreFile.parentFile.mkdirs()
-                keystoreFile.bytes = keystoreBase64.decodeBase64()
-
-                storeFile keystoreFile
-                storePassword "${keystorePassword}"
-                keyAlias "${keyAlias}"
-                keyPassword "${keyPassword}"
-            } else {
-                throw new GradleException("Missing signing environment variables")
-            }
+            storeFile keystoreFile
+            storePassword System.getenv("KEYSTORE_PASSWORD")
+            keyAlias System.getenv("KEY_ALIAS")
+            keyPassword System.getenv("KEY_PASSWORD")
         }
     }
     buildTypes {
