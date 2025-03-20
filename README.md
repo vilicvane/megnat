@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://megnat.app"><img src="assets/images/compact-icon.png" alt="Megnat" width="100" /></a>
+  <a href="https://megnat.app"><img src="src/assets/images/compact-icon.png" alt="Megnat" width="100" /></a>
 </p>
 <p align="center">
   <a href="https://github.com/vilicvane/megnat/blob/master/package.json"><img src="https://img.shields.io/github/package-json/v/vilicvane/megnat?color=%230969da&label=repo&style=flat-square" alt="Repository package.json version" /></a>
