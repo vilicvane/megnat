@@ -1,10 +1,12 @@
-name: Build Android
+name: Build
 on:
   push:
     tags:
       - release/*
+permissions:
+  contents: write
 jobs:
-  build:
+  build-android:
     runs-on: ubuntu-latest
     environment: Release
     container: reactnativecommunity/react-native-android:v14.0
