@@ -13,4 +13,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: npm install
+      - env:
+          EXPO_NO_TYPESCRIPT_SETUP: true
+        run: npx expo customize tsconfig.json
+      - run: git reset --hard # `expo customize` breaks root tsconfig.json.
       - run: npm test

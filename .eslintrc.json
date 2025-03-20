@@ -14,13 +14,6 @@
       "parserOptions": {
         "sourceType": "script"
       }
-    },
-    {
-      "files": ["*.ts"],
-      "extends": ["plugin:@mufan/typescript"],
-      "parserOptions": {
-        "project": "tsconfig.json"
-      }
     }
   ]
 }

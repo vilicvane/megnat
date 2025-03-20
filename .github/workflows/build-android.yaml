@@ -1,7 +1,8 @@
 name: Build Android
 on:
-  release:
-    types: [created]
+  push:
+    tags:
+      - release/*
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,10 +21,10 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          cd android
-          ./gradlew clean assembleRelease
-      - uses: actions/upload-artifact@v4
+        run: cd android && ./gradlew clean assembleRelease
+      - uses: softprops/action-gh-release@v1
         with:
-          name: app-release.apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+          files: android/app/build/outputs/apk/release/app-release.apk
+          name: Release ${{ github.ref_name | replace('release/', '') }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          token: ${{ secrets.GITHUB_TOKEN }}
