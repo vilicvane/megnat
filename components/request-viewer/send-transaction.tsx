@@ -235,7 +235,7 @@ async function sign(
         text: 'View',
         onPress: () =>
           void openBrowserAsync(
-            chainService.getExplorerURL(request.params.chainId, hash),
+            chainService.getTransactionURL(request.params.chainId, hash),
           ),
       },
       {

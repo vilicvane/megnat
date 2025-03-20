@@ -95,11 +95,11 @@ export class ChainService {
     );
   }
 
-  getExplorerURL(chainId: string, txHash: string): string {
+  getTransactionURL(chainId: string, txHash: string): string {
     const url =
       this.listedChainMap.get(chainId)?.explorer ?? CHAIN_EXPLORER_URL_FALLBACK;
 
-    return url + txHash;
+    return `${url}/tx/${txHash}`;
   }
 
   readonly keyUpdate = new Event<void>('keyUpdate');
@@ -191,10 +191,10 @@ export class ChainService {
       }[];
     }[] = await response.json();
 
-    const chains = rawChains.map((chain): ListedChain => {
-      const chainId = eip155ChainIdToString(BigInt(chain.chainId));
-      const name = chain.title || chain.name;
-      const explorer = chain.explorers?.find(
+    const chains = rawChains.map((rawChain): ListedChain => {
+      const chainId = eip155ChainIdToString(BigInt(rawChain.chainId));
+      const name = rawChain.title || rawChain.name;
+      const explorer = rawChain.explorers?.find(
         explorer => explorer.standard === 'EIP3091',
       )?.url;
 
