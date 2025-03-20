@@ -102,10 +102,17 @@ android {
             keyPassword 'android'
         }
         release {
-            def keystoreFile = new File("${project.buildDir}/keystore.jks")
+            def keystoreFile = file("${rootDir}/app/keystore.jks")
 
-            keystoreFile.parentFile.mkdirs()
             keystoreFile.bytes = System.getenv("KEYSTORE_BASE64").decodeBase64()
+
+            if (!keystoreFile.exists()) {
+                throw new GradleException("Keystore file not found at: ${keystoreFile.absolutePath}")
+            }
+
+            if (keystoreFile.length() == 0) {
+                throw new GradleException("Keystore file is empty at: ${keystoreFile.absolutePath}")
+            }
 
             storeFile keystoreFile
             storePassword System.getenv("KEYSTORE_PASSWORD")
