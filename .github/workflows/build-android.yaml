@@ -27,9 +27,8 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: cd android && ./gradlew clean assembleRelease
-      - uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v2
         with:
-          files: android/app/build/outputs/apk/release/app-release.apk
           name: Release ${{ env.VERSION }}
+          files: android/app/build/outputs/apk/release/app-release.apk
           prerelease: ${{ contains(github.ref_name, '-') }}
-          token: ${{ secrets.GITHUB_TOKEN }}
