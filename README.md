@@ -1,15 +1,9 @@
 <p align="center">
-  <a href="https://megnat.app">
-    <img src="assets/images/compact-icon.png" alt="Megnat" width="100" />
-  </a>
+  <a href="https://megnat.app"><img src="assets/images/compact-icon.png" alt="Megnat" width="100" /></a>
 </p>
 <p align="center">
-  <a href="https://github.com/vilicvane/megnat/blob/master/package.json">
-    <img src="https://img.shields.io/github/package-json/v/vilicvane/megnat?color=%230969da&label=repo&style=flat-square" alt="Repository package.json version" />
-  </a>
-  <a href="https://discord.gg/mEFzC6JRNg">
-    <img src="https://img.shields.io/badge/chat-discord-5662f6?style=flat-square" alt="Discord" />
-  </a>
+  <a href="https://github.com/vilicvane/megnat/blob/master/package.json"><img src="https://img.shields.io/github/package-json/v/vilicvane/megnat?color=%230969da&label=repo&style=flat-square" alt="Repository package.json version" /></a>
+  <a href="https://discord.gg/mEFzC6JRNg"><img src="https://img.shields.io/badge/chat-discord-5662f6?style=flat-square" alt="Discord" /></a>
 </p>
 <br />
 
