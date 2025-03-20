@@ -29,6 +29,11 @@ Megnat uses WalletConnect just like Tangem, but is solely built as a **signing a
 
 Currently it is **EVM-only**, and there is no plan to support other chains unless it is highly requested.
 
+## Support our work
+
+- Buy Tangem cards using Megnat [referral link](https://megnat.app/tangem).
+- Donate to `0x777368d7aEc769Bb7EEF3E5803f1CAC21C888888`.
+
 ## License
 
 This license is yet to be decided. The source code is made public for transparency only, and thus no permission is granted.
