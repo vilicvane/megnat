@@ -36,10 +36,14 @@ export function QRCodeInputModal({
   }, [getCameraPermission]);
 
   useEffect(() => {
-    if (!cameraPermission?.granted && cameraPermission?.canAskAgain) {
+    if (
+      !cameraPermission?.granted &&
+      cameraPermission?.canAskAgain &&
+      visible
+    ) {
       void requestCameraPermission();
     }
-  }, [cameraPermission, requestCameraPermission]);
+  }, [cameraPermission, requestCameraPermission, visible]);
 
   const cameraSize = Math.min(width, height) * 0.8;
 

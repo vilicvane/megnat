@@ -14,6 +14,7 @@ import {
   Text,
 } from 'react-native-paper';
 
+import {SessionList} from '../components/session-list.js';
 import {
   MEGNAT_REFERRAL_URL,
   MEGNAT_URL,
@@ -24,6 +25,7 @@ import {useVisibleOpenClose} from '../hooks/index.js';
 import type {UIService, WalletStorageService} from '../services/index.js';
 import {
   useWalletKitPendingSessionRequests,
+  useWalletKitSessions,
   useWallets,
 } from '../services/index.js';
 import {
@@ -47,6 +49,8 @@ export default function IndexScreen(): ReactNode {
         a.name.localeCompare(b.name),
     );
   }, [wallets]);
+
+  const sessions = useWalletKitSessions(walletKitService);
 
   const pendingSessionRequests =
     useWalletKitPendingSessionRequests(walletKitService);
@@ -157,62 +161,67 @@ export default function IndexScreen(): ReactNode {
         </Menu>
       </Appbar.Header>
       <ScrollView contentContainerStyle={{flexGrow: 1}}>
-        {sortedWallets.length > 0 ? (
-          <List.Section title="Wallets">
-            {sortedWallets.map(wallet => {
-              const [accordionIcon, addressIcon] = wallet.chainCode
-                ? ['key-link', 'file-link']
-                : ['key', 'file-key'];
+        {sortedWallets.length > 0 || sessions.length > 0 ? (
+          <>
+            {sortedWallets.length > 0 && (
+              <List.Section title="Wallets">
+                {sortedWallets.map(wallet => {
+                  const [accordionIcon, addressIcon] = wallet.chainCode
+                    ? ['key-link', 'file-link']
+                    : ['key', 'file-key'];
 
-              return (
-                <List.Accordion
-                  key={wallet.publicKey}
-                  left={({color, style}) => (
-                    <List.Icon
-                      icon={accordionIcon}
-                      color={
-                        color === theme.colors.primary
-                          ? theme.colors.onPrimary
-                          : color
-                      }
-                      style={style}
-                    />
-                  )}
-                  title={wallet.name}
-                  titleStyle={{color: theme.colors.onBackground}}
-                  onLongPress={() => {
-                    router.push({
-                      pathname: '/wallet',
-                      params: {walletPublicKey: wallet.publicKey},
-                    });
-                  }}
-                >
-                  {wallet.derivations.map(({path, address}, index) => (
-                    <List.Item
-                      key={index}
-                      style={{marginLeft: 8}}
+                  return (
+                    <List.Accordion
+                      key={wallet.publicKey}
                       left={({color, style}) => (
                         <List.Icon
-                          icon={addressIcon}
-                          color={color}
-                          style={{...style, alignSelf: 'center'}}
+                          icon={accordionIcon}
+                          color={
+                            color === theme.colors.primary
+                              ? theme.colors.onPrimary
+                              : color
+                          }
+                          style={style}
                         />
                       )}
-                      title={address}
-                      titleEllipsizeMode="middle"
-                      description={path}
-                      onPress={() => {
+                      title={wallet.name}
+                      titleStyle={{color: theme.colors.onSurface}}
+                      onLongPress={() => {
                         router.push({
-                          pathname: '/wallet-account',
-                          params: {address},
+                          pathname: '/wallet',
+                          params: {walletPublicKey: wallet.publicKey},
                         });
                       }}
-                    />
-                  ))}
-                </List.Accordion>
-              );
-            })}
-          </List.Section>
+                    >
+                      {wallet.derivations.map(({path, address}) => (
+                        <List.Item
+                          key={address}
+                          style={{marginLeft: 8}}
+                          left={({color, style}) => (
+                            <List.Icon
+                              icon={addressIcon}
+                              color={color}
+                              style={{...style, alignSelf: 'center'}}
+                            />
+                          )}
+                          title={address}
+                          titleEllipsizeMode="middle"
+                          description={path}
+                          onPress={() => {
+                            router.push({
+                              pathname: '/wallet-account',
+                              params: {address},
+                            });
+                          }}
+                        />
+                      ))}
+                    </List.Accordion>
+                  );
+                })}
+              </List.Section>
+            )}
+            {sessions.length > 0 && <SessionList sessions={sessions} />}
+          </>
         ) : (
           <View
             style={{

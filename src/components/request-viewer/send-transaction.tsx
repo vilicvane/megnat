@@ -123,7 +123,6 @@ export function SendTransaction({request}: SendTransactionProps): ReactNode {
         <View
           style={{
             margin: 16,
-            marginTop: 'auto',
             flexDirection: 'row',
             gap: 8,
           }}

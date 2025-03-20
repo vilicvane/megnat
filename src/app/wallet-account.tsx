@@ -1,16 +1,16 @@
 import * as Clipboard from 'expo-clipboard';
 import {router, useLocalSearchParams} from 'expo-router';
 import type {ReactNode} from 'react';
-import {Alert, ScrollView, ToastAndroid, View} from 'react-native';
-import {Appbar, IconButton, List, Text} from 'react-native-paper';
+import {ScrollView, ToastAndroid, View} from 'react-native';
+import {Appbar, List, Text} from 'react-native-paper';
 
 import {
   QRCodeInputModal,
   useQRCodeInputModalProps,
 } from '../components/qrcode-input-modal.js';
+import {SessionList} from '../components/session-list.js';
 import {
   AsyncButton,
-  AsyncIconButton,
   DateFromNow,
   ListIconClockTicking,
 } from '../components/ui/index.js';
@@ -18,7 +18,6 @@ import {RPC_METHOD_DISPLAY_NAME} from '../constants/index.js';
 import {useEntrances} from '../entrances.js';
 import type {UIService, WalletKitService} from '../services/index.js';
 import {
-  SUPPORTED_METHOD_SET,
   getSessionDisplayName,
   useWalletKitPendingSessionRequests,
   useWalletKitSessions,
@@ -115,60 +114,7 @@ export default function WalletAccountScreen(): ReactNode {
             ))}
           </List.Section>
         )}
-        {sessions.length > 0 && (
-          <List.Section title="Sessions">
-            {sessions.map(session => {
-              const unsupported =
-                session.namespaces.eip155?.methods.some(
-                  method => !SUPPORTED_METHOD_SET.has(method),
-                ) ?? false;
-
-              return (
-                <List.Item
-                  key={session.topic}
-                  left={({style}) => (
-                    <List.Icon
-                      icon="web"
-                      color={theme.colors.listIcon}
-                      style={style}
-                    />
-                  )}
-                  title={
-                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                      <Text>{getSessionDisplayName(session)}</Text>
-                      {unsupported && (
-                        <IconButton
-                          icon="alert-circle"
-                          iconColor={theme.colors.warning}
-                          size={16}
-                          style={{
-                            margin: 0,
-                            marginLeft: -4,
-                            height: 16,
-                          }}
-                          onPress={() => {
-                            Alert.alert(
-                              'Unsupported methods',
-                              'This session requires some methods that are not supported by Megnat, thus may not work as expected.',
-                            );
-                          }}
-                        />
-                      )}
-                    </View>
-                  }
-                  description={session.peer.metadata.url}
-                  right={({style}) => (
-                    <AsyncIconButton
-                      icon="close"
-                      style={style}
-                      handler={() => walletKitService.disconnect(session.topic)}
-                    />
-                  )}
-                />
-              );
-            })}
-          </List.Section>
-        )}
+        {sessions.length > 0 && <SessionList sessions={sessions} />}
       </ScrollView>
       <View style={{margin: 16}}>
         <AsyncButton
@@ -205,6 +151,7 @@ async function connect(
   const message = await walletKitService.connect(uri, address);
 
   if (!message) {
+    ToastAndroid.show('Session connected', ToastAndroid.SHORT);
     return;
   }
 

@@ -69,7 +69,6 @@ export function SignMessage({request}: SignMessageProps): ReactNode {
         <View
           style={{
             margin: 16,
-            marginTop: 'auto',
             flexDirection: 'row',
             gap: 8,
           }}

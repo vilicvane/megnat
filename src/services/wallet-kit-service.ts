@@ -16,6 +16,7 @@ import {
 import {useEffect} from 'react';
 
 import {useRefresh} from '../hooks/index.js';
+import {Event, getEIP155ChainIdPrefix} from '../utils/index.js';
 
 export const SUPPORTED_METHODS = [
   'eth_sendTransaction',
@@ -74,7 +75,7 @@ export class WalletKitService {
       console.info('session_request', event);
 
       if (SUPPORTED_METHOD_SET.has(event.params.request.method)) {
-        this.emitPendingSessionRequestUpdate();
+        this.pendingSessionRequestUpdate.emit();
       } else {
         void this.rejectSessionRequest(
           event,
@@ -88,11 +89,22 @@ export class WalletKitService {
     });
 
     walletKit.engine.signClient.events
-      .on('session_expire', () => this.emitSessionUpdate())
-      .on('session_delete', () => this.emitSessionUpdate())
-      .on('session_request_expire', () =>
-        this.emitPendingSessionRequestUpdate(),
-      );
+      .on('session_update', event => {
+        console.info('session_update', event);
+        this.sessionUpdate.emit();
+      })
+      .on('session_expire', event => {
+        console.info('session_expire', event);
+        this.sessionUpdate.emit();
+      })
+      .on('session_delete', event => {
+        console.info('session_delete', event);
+        this.sessionUpdate.emit();
+      })
+      .on('session_request_expire', event => {
+        console.info('session_request_expire', event);
+        this.pendingSessionRequestUpdate.emit();
+      });
   }
 
   async connect(
@@ -110,13 +122,55 @@ export class WalletKitService {
     return promise;
   }
 
-  async disconnect(topic: string): Promise<void> {
+  async disconnect(session: SessionTypes.Struct): Promise<void> {
     await this.walletKit.disconnectSession({
-      topic,
+      topic: session.topic,
       reason: getSdkError('USER_DISCONNECTED'),
     });
 
-    this.emitSessionUpdate();
+    this.sessionUpdate.emit();
+  }
+
+  async updateSession(
+    session: SessionTypes.Struct,
+    addresses: string[],
+  ): Promise<void> {
+    const chains = session.namespaces.eip155.chains ?? [];
+
+    const namespaces = {
+      ...session.namespaces,
+      eip155: {
+        ...session.namespaces.eip155,
+        accounts: addresses.flatMap(address =>
+          chains.map(chain => `${chain}:${address}`),
+        ),
+      },
+    };
+
+    await this.walletKit.updateSession({
+      topic: session.topic,
+      namespaces,
+    });
+
+    this.sessionUpdate.emit();
+  }
+
+  async switchSessionAccount(
+    session: SessionTypes.Struct,
+    addresses: string[],
+  ): Promise<void> {
+    const chainId = getEIP155ChainIdPrefix(
+      session.namespaces.eip155.accounts[0],
+    );
+
+    await this.walletKit.emitSessionEvent({
+      topic: session.topic,
+      event: {
+        name: 'accountsChanged',
+        data: addresses,
+      },
+      chainId,
+    });
   }
 
   getPendingSessionRequests(): PendingRequestTypes.Struct[] {
@@ -140,7 +194,7 @@ export class WalletKitService {
       auths: [auth],
     });
 
-    this.emitSessionUpdate();
+    this.sessionUpdate.emit();
   }
 
   async rejectSessionAuthentication(id: number): Promise<void> {
@@ -163,7 +217,7 @@ export class WalletKitService {
       },
     });
 
-    this.emitPendingSessionRequestUpdate();
+    this.pendingSessionRequestUpdate.emit();
   }
 
   async completeSessionRequest(
@@ -179,7 +233,7 @@ export class WalletKitService {
       },
     });
 
-    this.emitPendingSessionRequestUpdate();
+    this.pendingSessionRequestUpdate.emit();
   }
 
   private async handleSessionProposal(
@@ -212,13 +266,20 @@ export class WalletKitService {
       ]),
     );
 
+    const events = Array.from(
+      new Set([
+        ...(params.requiredNamespaces.eip155?.events ?? []),
+        ...(params.optionalNamespaces.eip155?.events ?? []),
+      ]),
+    );
+
     const approvedNamespaces = buildApprovedNamespaces({
       proposal: params,
       supportedNamespaces: {
         eip155: {
           chains,
           methods,
-          events: params.requiredNamespaces.eip155?.events ?? [],
+          events,
           accounts: chains.map(chain => `${chain}:${address}`),
         },
       },
@@ -229,7 +290,7 @@ export class WalletKitService {
       namespaces: approvedNamespaces,
     });
 
-    this.emitSessionUpdate();
+    this.sessionUpdate.emit();
   }
 
   private async handleSessionAuthenticate(
@@ -271,33 +332,11 @@ export class WalletKitService {
     };
   }
 
-  private sessionUpdateCallbackSet = new Set<() => void>();
+  readonly sessionUpdate = new Event<void>('session-update');
 
-  onSessionUpdate(callback: () => void): () => void {
-    this.sessionUpdateCallbackSet.add(callback);
-
-    return () => {
-      this.sessionUpdateCallbackSet.delete(callback);
-    };
-  }
-
-  emitSessionUpdate(): void {
-    this.sessionUpdateCallbackSet.forEach(callback => callback());
-  }
-
-  private pendingSessionRequestCallbackSet = new Set<() => void>();
-
-  onPendingSessionRequest(callback: () => void): () => void {
-    this.pendingSessionRequestCallbackSet.add(callback);
-
-    return () => {
-      this.pendingSessionRequestCallbackSet.delete(callback);
-    };
-  }
-
-  emitPendingSessionRequestUpdate(): void {
-    this.pendingSessionRequestCallbackSet.forEach(callback => callback());
-  }
+  readonly pendingSessionRequestUpdate = new Event<void>(
+    'pending-session-request-update',
+  );
 
   static async create(projectId: string): Promise<WalletKitService> {
     const walletKit = await WalletKit.init({
@@ -330,7 +369,7 @@ export function useWalletKitSessions(
 ): SessionTypes.Struct[] {
   const refresh = useRefresh();
 
-  useEffect(() => service.onSessionUpdate(refresh), [refresh, service]);
+  useEffect(() => service.sessionUpdate.on(refresh), [refresh, service]);
 
   let sessions = Object.values(service.walletKit.getActiveSessions());
 
@@ -343,6 +382,17 @@ export function useWalletKitSessions(
   return sessions;
 }
 
+export function useWalletKitSession(
+  service: WalletKitService,
+  topic: string,
+): SessionTypes.Struct | undefined {
+  const refresh = useRefresh();
+
+  useEffect(() => service.sessionUpdate.on(refresh), [refresh, service]);
+
+  return service.walletKit.getActiveSessions()[topic];
+}
+
 export function useWalletKitPendingSessionRequests(
   service: WalletKitService,
   address?: string,
@@ -352,7 +402,10 @@ export function useWalletKitPendingSessionRequests(
 }[] {
   const refresh = useRefresh();
 
-  useEffect(() => service.onPendingSessionRequest(refresh), [refresh, service]);
+  useEffect(
+    () => service.pendingSessionRequestUpdate.on(refresh),
+    [refresh, service],
+  );
 
   const topicToSessionDict = service.walletKit.getActiveSessions();
 

@@ -102,7 +102,7 @@ export class ChainService {
     return `${url}/tx/${txHash}`;
   }
 
-  readonly keyUpdate = new Event<void>('keyUpdate');
+  readonly keyUpdate = new Event<void>('key-update');
 
   getInfuraKey(): string | undefined {
     return this.infuraKey;
@@ -145,7 +145,7 @@ export class ChainService {
     this.customChainUpdate.emit();
   }
 
-  readonly customChainUpdate = new Event<void>('customChainUpdate');
+  readonly customChainUpdate = new Event<void>('custom-chain-update');
 
   getCustomChains(): CustomChain[] {
     return Array.from(this.customChainMap.values());
@@ -175,7 +175,7 @@ export class ChainService {
     await this.storageService.set('customChains', this.getCustomChains());
   }
 
-  readonly chainListUpdate = new Event<void>('chainListUpdate');
+  readonly chainListUpdate = new Event<void>('chain-list-update');
 
   private async fetchChainList(): Promise<void> {
     const response = await fetch(CHAIN_LIST_URL);

@@ -5,7 +5,7 @@ export const THEME = {
   ...MD3DarkTheme,
   colors: {
     ...MD3DarkTheme.colors,
-    primary: '#1274F0',
+    primary: '#1274f0',
     onPrimary: '#ffffff',
 
     secondary: '#eb3344',
@@ -28,7 +28,7 @@ export const THEME = {
 
     ...{
       warning: '#ff9d34',
-      info: '#4F98F5',
+      info: '#4f98f5',
       listIcon: '#ffffff99',
     },
   },
