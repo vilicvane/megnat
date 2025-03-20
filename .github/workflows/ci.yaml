@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     container: node:22
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: npm install
       - env:
           EXPO_NO_TYPESCRIPT_SETUP: true
