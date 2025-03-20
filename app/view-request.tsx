@@ -67,6 +67,7 @@ export default function ViewRequestScreen(): ReactNode {
     case 'personal_sign':
       return <SignMessage request={request} />;
     case 'eth_signTypedData':
+    case 'eth_signTypedData_v3':
     case 'eth_signTypedData_v4':
       return <SignTypedData request={request} />;
     default:

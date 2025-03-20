@@ -7,7 +7,6 @@ import {
   Signature,
   Transaction,
   TypedDataEncoder,
-  assert,
   assertArgument,
   copyRequest,
   ethers,
@@ -98,35 +97,7 @@ export class TangemSigner extends ethers.AbstractSigner {
     types: Record<string, Array<ethers.TypedDataField>>,
     value: Record<string, any>,
   ): Promise<string> {
-    const populated = await TypedDataEncoder.resolveNames(
-      domain,
-      types,
-      value,
-      async (name: string) => {
-        assert(
-          this.provider != null,
-          'cannot resolve ENS names without a provider',
-          'UNSUPPORTED_OPERATION',
-          {
-            operation: 'resolveName',
-            info: {name},
-          },
-        );
-
-        const address = await this.provider.resolveName(name);
-        assert(address != null, 'unconfigured ENS name', 'UNCONFIGURED_NAME', {
-          value: name,
-        });
-
-        return address;
-      },
-    );
-
-    const hash = TypedDataEncoder.hash(
-      populated.domain,
-      types,
-      populated.value,
-    );
+    const hash = TypedDataEncoder.hash(domain, types, value);
 
     const {
       signatures: [tangemSignature],
