@@ -1,16 +1,19 @@
 import {CameraView, useCameraPermissions} from 'expo-camera';
+import * as Clipboard from 'expo-clipboard';
 import type {ReactNode} from 'react';
 import {useEffect, useState} from 'react';
-import {AppState, View, useWindowDimensions} from 'react-native';
+import {AppState, ToastAndroid, View, useWindowDimensions} from 'react-native';
 import {Modal, Portal, Text} from 'react-native-paper';
 
 import {useTheme} from '../theme.js';
+
+import {AsyncButton} from './ui/index.js';
 
 export type QRCodeInputModalProps = {
   visible: boolean;
   filter?: (data: string) => boolean;
   onDismiss: () => void;
-  onQRCodeScanned: (data: string) => void;
+  onQRCodeScanned: (data: string) => boolean;
 };
 
 export function QRCodeInputModal({
@@ -82,6 +85,26 @@ export function QRCodeInputModal({
             <Text>Grant camera permission to scan QR codes</Text>
           </View>
         )}
+        <View style={{marginTop: 16}}>
+          <AsyncButton
+            mode="contained"
+            buttonColor={theme.colors.elevation.level2}
+            handler={async () => {
+              const data = await Clipboard.getStringAsync();
+
+              const matched = onQRCodeScanned(data);
+
+              if (!matched) {
+                ToastAndroid.show(
+                  'Unrecognized clipboard content',
+                  ToastAndroid.SHORT,
+                );
+              }
+            }}
+          >
+            Read from clipboard
+          </AsyncButton>
+        </View>
       </Modal>
     </Portal>
   );
@@ -103,6 +126,8 @@ export function useQRCodeInputModalProps(): [
     {
       visible,
       onQRCodeScanned: (data: string) => {
+        let matched = false;
+
         setState(state => {
           const {pattern, resolve} = state;
 
@@ -112,12 +137,16 @@ export function useQRCodeInputModalProps(): [
 
           resolve?.(data);
 
+          matched = true;
+
           return {
             visible: false,
             pattern: undefined,
             resolve: undefined,
           };
         });
+
+        return matched;
       },
       onDismiss: () => {
         setState(state => {
