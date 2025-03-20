@@ -12,10 +12,6 @@ jobs:
     container: node:22
     steps:
       - uses: actions/checkout@v4
-      - run: git config --global --add safe.directory $(pwd)
       - run: npm install
-      - env:
-          EXPO_NO_TYPESCRIPT_SETUP: true
-        run: npx expo customize tsconfig.json
-      - run: git reset --hard # `expo customize` breaks root tsconfig.json.
+      - run: npx expo customize tsconfig.json
       - run: npm test

@@ -1,8 +1,11 @@
 {
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {},
   "references": [
     {
       "path": "src"
     }
   ],
-  "files": []
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  "exclude": ["**"]
 }
