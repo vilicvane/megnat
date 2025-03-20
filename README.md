@@ -23,7 +23,7 @@ It is created to unleash the full potential of Tangem cards and provide a possib
 
 ## A signing app
 
-Megnat uses WalletConnect just like Tangem, but is solely built as a **signing app**, meaning built-in swapping & DeFi features are non-goals.
+Megnat uses WalletConnect just like Tangem, but is solely built as a **signing app**, meaning built-in token management and DeFi features are non-goals.
 
 ## EVM-only
 
