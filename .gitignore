@@ -34,3 +34,6 @@ yarn-debug.*
 yarn-error.*
 .env*.local
 /tmp/
+
+# Release
+/android/app/release/
