@@ -1,6 +1,6 @@
 {
   "root": true,
-  "ignorePatterns": ["node_modules/", "/./"],
+  "ignorePatterns": ["node_modules/", "/src/"],
   "extends": ["plugin:@mufan/javascript"],
   "overrides": [
     {
@@ -13,13 +13,6 @@
       "files": "**/*.cjs",
       "parserOptions": {
         "sourceType": "script"
-      }
-    },
-    {
-      "files": ["**/*.{ts,tsx}"],
-      "extends": ["plugin:@mufan/typescript"],
-      "parserOptions": {
-        "project": "tsconfig.json"
       }
     }
   ]
