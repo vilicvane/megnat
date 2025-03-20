@@ -1,8 +1,10 @@
-import {CameraView} from 'expo-camera';
+import {CameraView, useCameraPermissions} from 'expo-camera';
 import type {ReactNode} from 'react';
-import {useState} from 'react';
-import {useWindowDimensions} from 'react-native';
-import {Modal, Portal} from 'react-native-paper';
+import {useEffect, useState} from 'react';
+import {AppState, View, useWindowDimensions} from 'react-native';
+import {Modal, Portal, Text} from 'react-native-paper';
+
+import {useTheme} from '../theme.js';
 
 export type QRCodeInputModalProps = {
   visible: boolean;
@@ -17,7 +19,27 @@ export function QRCodeInputModal({
   onDismiss,
   onQRCodeScanned,
 }: QRCodeInputModalProps): ReactNode {
+  const theme = useTheme();
+
   const {width, height} = useWindowDimensions();
+
+  const [cameraPermission, requestCameraPermission, getCameraPermission] =
+    useCameraPermissions();
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener(
+      'change',
+      getCameraPermission,
+    );
+
+    return () => subscription.remove();
+  }, [getCameraPermission]);
+
+  useEffect(() => {
+    if (!cameraPermission?.granted && cameraPermission?.canAskAgain) {
+      void requestCameraPermission();
+    }
+  }, [cameraPermission, requestCameraPermission]);
 
   const cameraSize = Math.min(width, height) * 0.8;
 
@@ -31,19 +53,31 @@ export function QRCodeInputModal({
         }}
         onDismiss={onDismiss}
       >
-        <CameraView
-          style={{width: cameraSize, height: cameraSize, borderRadius: 16}}
-          barcodeScannerSettings={{
-            barcodeTypes: ['qr'],
-          }}
-          onBarcodeScanned={({data}) => {
-            if (filter && !filter(data)) {
-              return;
-            }
+        {cameraPermission?.granted ? (
+          <CameraView
+            style={{width: cameraSize, height: cameraSize, borderRadius: 16}}
+            barcodeScannerSettings={{
+              barcodeTypes: ['qr'],
+            }}
+            onBarcodeScanned={({data}) => {
+              if (filter && !filter(data)) {
+                return;
+              }
 
-            onQRCodeScanned(data);
-          }}
-        />
+              onQRCodeScanned(data);
+            }}
+          />
+        ) : (
+          <View
+            style={{
+              padding: 16,
+              borderRadius: 4,
+              backgroundColor: theme.colors.surfaceVariant,
+            }}
+          >
+            <Text>Grant camera permission to scan QR codes</Text>
+          </View>
+        )}
       </Modal>
     </Portal>
   );

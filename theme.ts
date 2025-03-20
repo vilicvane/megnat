@@ -14,6 +14,7 @@ export const THEME = {
     background: '#000000',
 
     surface: '#000000',
+    surfaceVariant: '#333333',
     onSurfaceVariant: '#ffffffaa',
 
     elevation: {
