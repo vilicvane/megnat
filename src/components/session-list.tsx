@@ -96,7 +96,7 @@ export function SessionList({sessions}: SessionListProps): ReactNode {
                 </Badge>
                 <AsyncIconButton
                   icon="close"
-                  style={style}
+                  style={[style, {marginRight: -8}]}
                   handler={() => walletKitService.disconnect(session)}
                 />
               </>

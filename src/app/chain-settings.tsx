@@ -86,7 +86,7 @@ function ChainItem({chain}: {chain: CustomChain}): ReactNode {
       right={({style}) => (
         <AsyncIconButton
           icon="close"
-          style={style}
+          style={[style, {marginRight: -8}]}
           handler={() => chainService.removeCustomChain(chain.id)}
         />
       )}

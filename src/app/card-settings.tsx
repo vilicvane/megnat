@@ -101,7 +101,7 @@ export default function CardSettingsScreen(): ReactNode {
                   descriptionNumberOfLines={1}
                   right={({style}) => (
                     <AsyncIconButton
-                      style={style}
+                      style={[style, {marginRight: -8}]}
                       icon="delete-alert-outline"
                       iconColor={theme.colors.secondary}
                       handler={() =>

@@ -1,7 +1,7 @@
 import {router, useLocalSearchParams} from 'expo-router';
 import type {ReactNode} from 'react';
 import React, {useRef, useState} from 'react';
-import {Alert, ScrollView, View} from 'react-native';
+import {Alert, ScrollView, ToastAndroid, View} from 'react-native';
 import {Appbar, List, Menu} from 'react-native-paper';
 
 import {
@@ -96,10 +96,13 @@ export default function WalletScreen(): ReactNode {
                 path !== undefined && path !== DERIVATION_PATH_DEFAULT
                   ? ({style}) => (
                       <AsyncIconButton
-                        style={{
-                          ...style,
-                          alignSelf: 'center',
-                        }}
+                        style={[
+                          style,
+                          {
+                            alignSelf: 'center',
+                            marginRight: -8,
+                          },
+                        ]}
                         icon="close"
                         handler={async () => {
                           await removeDerivation(
@@ -196,10 +199,7 @@ async function addDerivation(
     publicKey,
   );
 
-  Alert.alert(
-    'Derivation added',
-    `Derivation at path ${JSON.stringify(derivationPath)} has been added.`,
-  );
+  ToastAndroid.show('Derivation added', ToastAndroid.SHORT);
 }
 
 async function removeDerivation(
