@@ -12,7 +12,7 @@ jobs:
     container: node:22
     steps:
       - uses: actions/checkout@v4
-      - run: git config --global --add safe.directory ${{ github.workspace }}
+      - run: git config --global --add safe.directory $(pwd)
       - run: npm install
       - env:
           EXPO_NO_TYPESCRIPT_SETUP: true
