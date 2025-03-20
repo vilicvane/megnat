@@ -113,10 +113,10 @@ android {
                 keystoreFile.parentFile.mkdirs()
                 keystoreFile.bytes = keystoreBase64.decodeBase64()
 
-                storeFile (keystoreFile)
-                storePassword (keystorePassword)
-                keyAlias (keyAlias)
-                keyPassword (keyPassword)
+                storeFile keystoreFile
+                storePassword "${keystorePassword}"
+                keyAlias "${keyAlias}"
+                keyPassword "${keyPassword}"
             } else {
                 throw new GradleException("Missing signing environment variables")
             }
