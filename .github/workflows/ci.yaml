@@ -9,9 +9,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: node:20
+    container: node:22
     steps:
       - uses: actions/checkout@v3
       - run: npm install
-      - run: npx expo customize tsconfig.json
       - run: npm test

@@ -1,13 +1,8 @@
 {
-  "extends": "./tsconfig.base.json",
-  "compilerOptions": {
-    "composite": true,
-    "target": "ES2022",
-    "module": "Preserve",
-    "moduleResolution": "bundler",
-    "jsx": "react-native",
-    "rootDir": ".",
-    "outDir": ".bld/app"
-  },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+  "references": [
+    {
+      "path": "src"
+    }
+  ],
+  "files": []
 }

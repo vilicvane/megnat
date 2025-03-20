@@ -13,7 +13,6 @@ jobs:
         with:
           node-version: 22
       - run: npm install
-      - run: npx expo customize tsconfig.json
       - env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,6 +1,7 @@
 import {execSync} from 'child_process';
 
 import type {ExpoConfig} from 'expo/config.js';
+
 export default {
   name: 'Megnat',
   slug: 'megnat',

@@ -1,7 +1,7 @@
 {
   "root": true,
-  "ignorePatterns": ["node_modules/", "dist/", "tmp/"],
-  "extends": ["plugin:@mufan/javascript", "plugin:@mufan/react"],
+  "ignorePatterns": ["node_modules/", "/src/", "dist/", "tmp/"],
+  "extends": ["plugin:@mufan/javascript"],
   "overrides": [
     {
       "files": "**/*.{js,mjs}",
@@ -16,7 +16,7 @@
       }
     },
     {
-      "files": ["**/*.{ts,tsx}"],
+      "files": ["*.ts"],
       "extends": ["plugin:@mufan/typescript"],
       "parserOptions": {
         "project": "tsconfig.json"

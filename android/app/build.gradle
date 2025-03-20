@@ -104,14 +104,8 @@ android {
         release {
             def keystoreFile = file("${rootDir}/app/keystore.jks")
 
-            keystoreFile.bytes = System.getenv("KEYSTORE_BASE64").decodeBase64()
-
             if (!keystoreFile.exists()) {
-                throw new GradleException("Keystore file not found at: ${keystoreFile.absolutePath}")
-            }
-
-            if (keystoreFile.length() == 0) {
-                throw new GradleException("Keystore file is empty at: ${keystoreFile.absolutePath}")
+                keystoreFile.bytes = System.getenv("KEYSTORE_BASE64").decodeBase64()
             }
 
             storeFile keystoreFile
