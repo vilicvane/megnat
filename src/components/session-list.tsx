@@ -5,8 +5,10 @@ import {Alert, View} from 'react-native';
 import {Badge, IconButton, List, Text} from 'react-native-paper';
 
 import {useEntrances} from '../entrances.js';
+import type {WalletKitService} from '../services/index.js';
 import {
   SUPPORTED_METHOD_SET,
+  getSessionAddressSet,
   getSessionDisplayName,
 } from '../services/index.js';
 import {useTheme} from '../theme.js';
@@ -16,9 +18,10 @@ import {AsyncIconButton} from './ui/index.js';
 
 export type SessionListProps = {
   sessions: SessionTypes.Struct[];
+  address?: string;
 };
 
-export function SessionList({sessions}: SessionListProps): ReactNode {
+export function SessionList({sessions, address}: SessionListProps): ReactNode {
   const theme = useTheme();
 
   const {walletKitService} = useEntrances();
@@ -45,7 +48,7 @@ export function SessionList({sessions}: SessionListProps): ReactNode {
           <List.Item
             key={session.topic}
             left={({style}) => (
-              <View style={style}>
+              <View style={[style, {alignSelf: 'center'}]}>
                 <List.Icon icon="web" color={theme.colors.listIcon} />
               </View>
             )}
@@ -72,7 +75,8 @@ export function SessionList({sessions}: SessionListProps): ReactNode {
                 )}
               </View>
             }
-            description={session.peer.metadata.url}
+            description={new URL(session.peer.metadata.url).hostname}
+            descriptionNumberOfLines={1}
             onPress={() =>
               router.push({
                 pathname: '/session',
@@ -83,21 +87,23 @@ export function SessionList({sessions}: SessionListProps): ReactNode {
             }
             right={({style}) => (
               <>
-                <Badge
-                  size={24}
-                  style={{
-                    alignSelf: 'center',
-                    marginRight: -12,
-                    backgroundColor: theme.colors.elevation.level2,
-                    color: theme.colors.onSurface,
-                  }}
-                >
-                  {wallets}
-                </Badge>
+                {(address === undefined || wallets > 1) && (
+                  <Badge
+                    size={24}
+                    style={{
+                      alignSelf: 'center',
+                      marginRight: -12,
+                      backgroundColor: theme.colors.elevation.level2,
+                      color: theme.colors.onSurface,
+                    }}
+                  >
+                    {wallets}
+                  </Badge>
+                )}
                 <AsyncIconButton
                   icon="close"
                   style={[style, {marginRight: -8}]}
-                  handler={() => walletKitService.disconnect(session)}
+                  handler={() => disconnect(walletKitService, session, address)}
                 />
               </>
             )}
@@ -106,4 +112,24 @@ export function SessionList({sessions}: SessionListProps): ReactNode {
       })}
     </List.Section>
   );
+}
+
+async function disconnect(
+  walletKitService: WalletKitService,
+  session: SessionTypes.Struct,
+  address: string | undefined,
+): Promise<void> {
+  if (address) {
+    const addressSet = getSessionAddressSet(session);
+
+    if (addressSet.size > 1) {
+      addressSet.delete(address);
+
+      await walletKitService.updateSession(session, Array.from(addressSet));
+    } else {
+      await walletKitService.disconnect(session);
+    }
+  } else {
+    await walletKitService.disconnect(session);
+  }
 }

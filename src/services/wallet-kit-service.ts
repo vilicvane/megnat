@@ -16,7 +16,11 @@ import {
 import {useEffect} from 'react';
 
 import {useRefresh} from '../hooks/index.js';
-import {Event, getEIP155ChainIdPrefix} from '../utils/index.js';
+import {
+  Event,
+  getEIP155ChainIdPrefix,
+  removeEIP155ChainIdPrefix,
+} from '../utils/index.js';
 
 export const SUPPORTED_METHODS = [
   'eth_sendTransaction',
@@ -455,5 +459,15 @@ export function useWalletKitSessionPendingRequests(
 export function getSessionDisplayName(session: SessionTypes.Struct): string {
   return (
     session.peer.metadata.name || new URL(session.peer.metadata.url).hostname
+  );
+}
+
+export function getSessionAddressSet(
+  session: SessionTypes.Struct,
+): Set<string> {
+  return new Set(
+    session.namespaces.eip155.accounts.map(account =>
+      removeEIP155ChainIdPrefix(account),
+    ),
   );
 }

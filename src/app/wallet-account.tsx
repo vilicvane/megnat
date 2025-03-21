@@ -62,7 +62,9 @@ export default function WalletAccountScreen(): ReactNode {
         {pendingSessionRequests.length > 0 && (
           <PendingRequestList pendingSessionRequests={pendingSessionRequests} />
         )}
-        {sessions.length > 0 && <SessionList sessions={sessions} />}
+        {sessions.length > 0 && (
+          <SessionList sessions={sessions} address={address} />
+        )}
       </ScrollView>
       <View style={{margin: 16}}>
         <AsyncButton
