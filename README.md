@@ -17,6 +17,7 @@ It is created to unleash the full potential of Tangem cards and provide a possib
 
 ## Highlights
 
+- 📑 Multiple wallets on a single card.
 - 🔑 Import & sign with **private key wallet** (so your wallet with vanity address can be safely stored on the card).
 - 💰 Respect dApps' gas price settings, big big money saved over time.
 - 🔌 Custom chains support for advanced users.
