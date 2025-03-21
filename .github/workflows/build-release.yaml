@@ -25,8 +25,9 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: cd android && ./gradlew clean assembleRelease
+      - run: mv android/app/build/outputs/apk/release/app-release.apk megnat-${{ github.ref_name }}.apk
       - uses: softprops/action-gh-release@v2
         with:
           name: Release ${{ github.ref_name }}
           prerelease: ${{ contains(github.ref_name, '-') }}
-          files: android/app/build/outputs/apk/release/app-release.apk
+          files: megnat-${{ github.ref_name }}.apk

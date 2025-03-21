@@ -102,16 +102,18 @@ android {
             keyPassword 'android'
         }
         release {
-            def keystoreFile = file("${rootDir}/app/keystore.jks")
+            def keystoreBase64 = System.getenv("KEYSTORE_BASE64")
 
-            if (!keystoreFile.exists()) {
-                keystoreFile.bytes = System.getenv("KEYSTORE_BASE64").decodeBase64()
+            if (keystoreBase64) {
+                def keystoreFile = file("${rootDir}/app/keystore.jks")
+
+                keystoreFile.bytes = keystoreBase64.decodeBase64()
+
+                storeFile keystoreFile
+                storePassword System.getenv("KEYSTORE_PASSWORD")
+                keyAlias System.getenv("KEY_ALIAS")
+                keyPassword System.getenv("KEY_PASSWORD")
             }
-
-            storeFile keystoreFile
-            storePassword System.getenv("KEYSTORE_PASSWORD")
-            keyAlias System.getenv("KEY_ALIAS")
-            keyPassword System.getenv("KEY_PASSWORD")
         }
     }
     buildTypes {
@@ -119,7 +121,7 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            signingConfig signingConfigs.release
+            signingConfig System.getenv("GITHUB_ACTIONS") ? signingConfigs.release : signingConfigs.debug
             shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
