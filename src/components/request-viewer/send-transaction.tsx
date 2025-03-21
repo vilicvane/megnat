@@ -1,4 +1,4 @@
-import type {PendingRequestTypes} from '@walletconnect/types';
+import type {PendingRequestTypes, SessionTypes} from '@walletconnect/types';
 import type {ethers} from 'ethers';
 import {formatEther, toBigInt} from 'ethers';
 import * as Clipboard from 'expo-clipboard';
@@ -19,13 +19,18 @@ import {
 } from '../../services/index.js';
 import {useTheme} from '../../theme.js';
 import {eip155ChainIdToBigInt} from '../../utils/index.js';
+import {SessionVerification} from '../session-verification.js';
 import {AsyncButton, ListItemWithDescriptionBlock} from '../ui/index.js';
 
 export type SendTransactionProps = {
+  session: SessionTypes.Struct;
   request: PendingRequestTypes.Struct;
 };
 
-export function SendTransaction({request}: SendTransactionProps): ReactNode {
+export function SendTransaction({
+  session,
+  request,
+}: SendTransactionProps): ReactNode {
   const theme = useTheme();
 
   const {chainService, walletKitService, walletStorageService} = useEntrances();
@@ -103,6 +108,10 @@ export function SendTransaction({request}: SendTransactionProps): ReactNode {
         <Appbar.BackAction onPress={() => router.back()} />
         <Appbar.Content title="Send transaction" />
       </Appbar.Header>
+      <SessionVerification
+        metadata={session.peer.metadata}
+        context={request.verifyContext}
+      />
       <ScrollView contentContainerStyle={{flexGrow: 1}}>
         <List.Section>
           <List.Item title="Chain" description={chainName} />
@@ -134,7 +143,7 @@ export function SendTransaction({request}: SendTransactionProps): ReactNode {
         >
           <AsyncButton
             mode="contained"
-            buttonColor={theme.colors.secondary}
+            buttonColor={theme.colors.secondaryContainer}
             style={{flex: 1, flexBasis: 0}}
             handler={() => reject(walletKitService, request)}
           >
@@ -142,8 +151,9 @@ export function SendTransaction({request}: SendTransactionProps): ReactNode {
           </AsyncButton>
           <AsyncButton
             mode="contained"
-            style={{flex: 1, flexBasis: 0}}
             disabled={signDisabled}
+            buttonColor={theme.colors.primaryContainer}
+            style={{flex: 1, flexBasis: 0}}
             handler={() =>
               sign(
                 chainService,

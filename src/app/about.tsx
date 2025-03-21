@@ -59,11 +59,21 @@ export default function AboutScreen(): ReactNode {
           <View>
             <Text variant="bodyLarge">
               Megnat is a{' '}
-              <Text style={{fontWeight: 'bold', color: theme.colors.primary}}>
+              <Text
+                style={{
+                  fontWeight: 'bold',
+                  color: theme.colors.primaryContainer,
+                }}
+              >
                 third-party
               </Text>{' '}
               /{' '}
-              <Text style={{fontWeight: 'bold', color: theme.colors.secondary}}>
+              <Text
+                style={{
+                  fontWeight: 'bold',
+                  color: theme.colors.secondaryContainer,
+                }}
+              >
                 non-official
               </Text>{' '}
               wallet app for Tangem cards.
@@ -88,13 +98,14 @@ export default function AboutScreen(): ReactNode {
       <View style={{padding: 16, gap: 8}}>
         <Button
           mode="contained"
+          buttonColor={theme.colors.primaryContainer}
           onPress={() => void openBrowserAsync(MEGNAT_DONATE_URL)}
         >
           Donate
         </Button>
         <Button
           mode="contained"
-          buttonColor={theme.colors.secondary}
+          buttonColor={theme.colors.secondaryContainer}
           onPress={() => void openBrowserAsync(MEGNAT_REFERRAL_URL)}
         >
           Referral link

@@ -2,9 +2,10 @@ import {buildAuthObject} from '@walletconnect/utils';
 import {router} from 'expo-router';
 import type {ReactNode} from 'react';
 import React, {useEffect, useState} from 'react';
-import {ScrollView, ToastAndroid, View} from 'react-native';
+import {Alert, ScrollView, ToastAndroid, View} from 'react-native';
 import {Appbar, List} from 'react-native-paper';
 
+import {SessionVerification} from '../components/session-verification.js';
 import {
   AsyncButton,
   ListItemWithDescriptionBlock,
@@ -23,11 +24,14 @@ export default function SessionAuthenticateScreen(): ReactNode {
 
   const {walletKitService, walletStorageService, uiService} = useEntrances();
   const [authentication] = useState(() => {
-    const authentication = uiService.state.pendingSessionAuthentication;
+    const pendingSession = uiService.state.pendingSession;
 
-    uiService.state.pendingSessionAuthentication = undefined;
+    uiService.state.pendingSession = undefined;
 
-    return authentication;
+    return (
+      pendingSession &&
+      (pendingSession.type === 'authenticate' ? pendingSession : undefined)
+    );
   });
 
   useEffect(() => {
@@ -51,6 +55,15 @@ export default function SessionAuthenticateScreen(): ReactNode {
 
   const signDisabled = !wallet;
 
+  const {
+    authenticate: {
+      params: {
+        requester: {metadata},
+      },
+      verifyContext,
+    },
+  } = authentication;
+
   return (
     <>
       <Appbar.Header>
@@ -61,9 +74,22 @@ export default function SessionAuthenticateScreen(): ReactNode {
         />
         <Appbar.Content title="Session authenticate" />
       </Appbar.Header>
+      <SessionVerification metadata={metadata} context={verifyContext} />
       <ScrollView contentContainerStyle={{flexGrow: 1}}>
         <List.Section>
-          <List.Item title="Signer" description={authentication.address} />
+          {metadata.description && (
+            <List.Item
+              title="Description"
+              description={metadata.description}
+              descriptionNumberOfLines={0}
+            />
+          )}
+          <List.Item
+            title="Address"
+            description={authentication.address}
+            descriptionNumberOfLines={1}
+            descriptionEllipsizeMode="middle"
+          />
           <ListItemWithDescriptionBlock
             title="Message"
             description={displayMessage}
@@ -80,7 +106,7 @@ export default function SessionAuthenticateScreen(): ReactNode {
         >
           <AsyncButton
             mode="contained"
-            buttonColor={theme.colors.secondary}
+            buttonColor={theme.colors.secondaryContainer}
             style={{flex: 1, flexBasis: 0}}
             handler={() => reject(walletKitService, authentication)}
           >
@@ -88,8 +114,9 @@ export default function SessionAuthenticateScreen(): ReactNode {
           </AsyncButton>
           <AsyncButton
             mode="contained"
-            style={{flex: 1, flexBasis: 0}}
             disabled={signDisabled}
+            buttonColor={theme.colors.primaryContainer}
+            style={{flex: 1, flexBasis: 0}}
             handler={() =>
               sign(
                 walletKitService,
@@ -109,11 +136,14 @@ export default function SessionAuthenticateScreen(): ReactNode {
 
 async function reject(
   walletKitService: WalletKitService,
-  pendingSessionAuthentication: PendingSessionAuthentication,
+  authentication: PendingSessionAuthentication,
 ): Promise<void> {
-  await walletKitService.rejectSessionAuthentication(
-    pendingSessionAuthentication.id,
-  );
+  await walletKitService
+    .rejectSessionAuthentication(authentication.authenticate.id)
+    .then(
+      () => ToastAndroid.show('Session rejected', ToastAndroid.SHORT),
+      error => Alert.alert('Error', error.message),
+    );
 
   router.back();
 }
@@ -141,9 +171,12 @@ async function sign(
     authentication.iss,
   );
 
-  await walletKitService.completeSessionAuthentication(authentication.id, auth);
-
-  ToastAndroid.show('Session authenticated', ToastAndroid.SHORT);
+  await walletKitService
+    .completeSessionAuthentication(authentication.authenticate.id, auth)
+    .then(
+      () => ToastAndroid.show('Session authenticated', ToastAndroid.SHORT),
+      error => Alert.alert('Error', error.message),
+    );
 
   router.back();
 }

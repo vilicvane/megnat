@@ -29,11 +29,11 @@ export function PendingRequestList({
           key={request.id}
           left={({style}) => (
             <ListIconClockTicking
-              color={theme.colors.onPrimary}
+              color={theme.colors.onSurface}
               style={style}
             />
           )}
-          title={getSessionDisplayName(session)}
+          title={getSessionDisplayName(session.peer.metadata)}
           description={
             <View
               style={{
@@ -42,7 +42,7 @@ export function PendingRequestList({
                 justifyContent: 'space-between',
               }}
             >
-              <Text style={{color: theme.colors.info}}>
+              <Text style={{color: theme.colors.primary}}>
                 {RPC_METHOD_DISPLAY_NAME(request.params.request.method)}
               </Text>
               {request.params.request.expiryTimestamp && (

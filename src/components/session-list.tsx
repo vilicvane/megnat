@@ -14,6 +14,7 @@ import {
 import {useTheme} from '../theme.js';
 import {removeEIP155ChainIdPrefix} from '../utils/index.js';
 
+import {SessionIcon} from './session-icon.js';
 import {AsyncIconButton} from './ui/index.js';
 
 export type SessionListProps = {
@@ -49,12 +50,14 @@ export function SessionList({sessions, address}: SessionListProps): ReactNode {
             key={session.topic}
             left={({style}) => (
               <View style={[style, {alignSelf: 'center'}]}>
-                <List.Icon icon="web" color={theme.colors.listIcon} />
+                <List.Icon
+                  icon={() => <SessionIcon metadata={session.peer.metadata} />}
+                />
               </View>
             )}
             title={
               <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                <Text>{getSessionDisplayName(session)}</Text>
+                <Text>{getSessionDisplayName(session.peer.metadata)}</Text>
                 {unsupported && (
                   <IconButton
                     icon="alert-circle"

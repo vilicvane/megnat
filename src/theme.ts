@@ -5,11 +5,17 @@ export const THEME = {
   ...MD3DarkTheme,
   colors: {
     ...MD3DarkTheme.colors,
-    primary: '#1274f0',
+    primary: '#60a2f6',
     onPrimary: '#ffffff',
+
+    primaryContainer: '#1274f0',
+    onPrimaryContainer: '#ffffff',
 
     secondary: '#eb3344',
     onSecondary: '#ffffff',
+
+    secondaryContainer: '#eb3344',
+    onSecondaryContainer: '#ffffff',
 
     background: '#000000',
 
@@ -28,7 +34,6 @@ export const THEME = {
 
     ...{
       warning: '#ff9d34',
-      info: '#4f98f5',
       listIcon: '#ffffff99',
     },
   },

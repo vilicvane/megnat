@@ -13,11 +13,14 @@ import {NEW_CARD_BACKUP_NEEDED_FOR_ACCESS_CODE_MESSAGE} from '../constants/index
 import {useEntrances} from '../entrances.js';
 import type {WalletStorageService} from '../services/index.js';
 import {tangem, tangemWalletToWallet} from '../tangem.js';
+import {useTheme} from '../theme.js';
 
 const SECRET_PATTERN =
   /^\s*(?:([\da-f]{64})|([a-z]+(?:\s+[a-z]+){11}(?:(?:\s+[a-z]+){3}){0,4}))\s*$/i;
 
 export default function ImportWalletScreen(): ReactNode {
+  const theme = useTheme();
+
   const {walletStorageService} = useEntrances();
 
   const [secret, setSecret] = useState('');
@@ -66,6 +69,7 @@ export default function ImportWalletScreen(): ReactNode {
         <AsyncButton
           mode="contained"
           disabled={!valid}
+          buttonColor={theme.colors.primaryContainer}
           handler={() =>
             importWallet(walletStorageService, {privateKey, mnemonic})
           }

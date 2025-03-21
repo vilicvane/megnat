@@ -4,6 +4,7 @@ import WalletKit from '@reown/walletkit';
 import {Core} from '@walletconnect/core';
 import type {
   AuthTypes,
+  CoreTypes,
   PendingRequestTypes,
   SessionTypes,
   SignClientTypes,
@@ -37,7 +38,7 @@ export class WalletKitService {
   private pendingSession:
     | {
         addresses: string[];
-        resolve: (message: PendingSessionAuthentication | void) => void;
+        resolve: (pendingSession: PendingSession | false) => void;
         reject: (error: Error) => void;
       }
     | undefined;
@@ -117,12 +118,10 @@ export class WalletKitService {
   async connect(
     uri: string,
     addresses: string[],
-  ): Promise<PendingSessionAuthentication | void> {
-    const promise = new Promise<PendingSessionAuthentication | void>(
-      (resolve, reject) => {
-        this.pendingSession = {addresses, resolve, reject};
-      },
-    );
+  ): Promise<PendingSession | false> {
+    const promise = new Promise<PendingSession | false>((resolve, reject) => {
+      this.pendingSession = {addresses, resolve, reject};
+    });
 
     await this.walletKit.pair({uri});
 
@@ -192,6 +191,25 @@ export class WalletKitService {
     return this.getPendingSessionRequests().find(request => request.id === id);
   }
 
+  async completeSessionProposal(
+    id: number,
+    namespaces: SessionTypes.Namespaces,
+  ): Promise<void> {
+    await this.walletKit.approveSession({
+      id,
+      namespaces,
+    });
+
+    this.sessionUpdate.emit();
+  }
+
+  async rejectSessionProposal(id: number): Promise<void> {
+    await this.walletKit.rejectSession({
+      id,
+      reason: getSdkError('USER_REJECTED'),
+    });
+  }
+
   async completeSessionAuthentication(
     id: number,
     auth: AuthTypes.Cacao,
@@ -244,9 +262,11 @@ export class WalletKitService {
   }
 
   private async handleSessionProposal(
-    {id, params}: SignClientTypes.EventArguments['session_proposal'],
+    event: SignClientTypes.EventArguments['session_proposal'],
     addresses: string[],
-  ): Promise<void> {
+  ): Promise<PendingSession | false> {
+    const {id, params} = event;
+
     const chains = Array.from(
       new Set([
         ...(params.requiredNamespaces.eip155?.chains ?? []),
@@ -259,7 +279,8 @@ export class WalletKitService {
         id,
         reason: getSdkError('UNSUPPORTED_CHAINS'),
       });
-      return;
+
+      return false;
     }
 
     // Filter out unsupported methods in optional namespaces but accept all
@@ -294,18 +315,20 @@ export class WalletKitService {
       },
     });
 
-    await this.walletKit.approveSession({
-      id,
+    return {
+      type: 'proposal',
+      addresses,
+      proposal: event,
       namespaces: approvedNamespaces,
-    });
-
-    this.sessionUpdate.emit();
+    };
   }
 
   private async handleSessionAuthenticate(
-    {id, params}: SignClientTypes.EventArguments['session_authenticate'],
+    event: SignClientTypes.EventArguments['session_authenticate'],
     address: string,
-  ): Promise<PendingSessionAuthentication> {
+  ): Promise<PendingSession> {
+    const {id, params} = event;
+
     const chains = params.authPayload.chains.filter(chain =>
       chain.startsWith('eip155:'),
     );
@@ -333,8 +356,9 @@ export class WalletKitService {
     });
 
     return {
-      id,
+      type: 'authenticate',
       address,
+      authenticate: event,
       authPayload,
       iss,
       message,
@@ -364,12 +388,24 @@ export class WalletKitService {
   }
 }
 
+export type PendingSession =
+  | PendingSessionProposal
+  | PendingSessionAuthentication;
+
 export type PendingSessionAuthentication = {
-  id: number;
+  type: 'authenticate';
   address: string;
+  authenticate: SignClientTypes.EventArguments['session_authenticate'];
   authPayload: AuthTypes.PayloadParams;
   iss: string;
   message: string;
+};
+
+export type PendingSessionProposal = {
+  type: 'proposal';
+  addresses: string[];
+  proposal: SignClientTypes.EventArguments['session_proposal'];
+  namespaces: SessionTypes.Namespaces;
 };
 
 export function useWalletKitSessions(
@@ -393,11 +429,15 @@ export function useWalletKitSessions(
 
 export function useWalletKitSession(
   service: WalletKitService,
-  topic: string,
+  topic: string | undefined,
 ): SessionTypes.Struct | undefined {
   const refresh = useRefresh();
 
   useEffect(() => service.sessionUpdate.on(refresh), [refresh, service]);
+
+  if (topic === undefined) {
+    return undefined;
+  }
 
   return service.walletKit.getActiveSessions()[topic];
 }
@@ -456,10 +496,8 @@ export function useWalletKitSessionPendingRequests(
     .filter(request => request.topic === session.topic);
 }
 
-export function getSessionDisplayName(session: SessionTypes.Struct): string {
-  return (
-    session.peer.metadata.name || new URL(session.peer.metadata.url).hostname
-  );
+export function getSessionDisplayName(metadata: CoreTypes.Metadata): string {
+  return metadata.name || new URL(metadata.url).hostname;
 }
 
 export function getSessionAddressSet(

@@ -103,7 +103,7 @@ export default function CardSettingsScreen(): ReactNode {
                     <AsyncIconButton
                       style={[style, {marginRight: -8}]}
                       icon="delete-alert-outline"
-                      iconColor={theme.colors.secondary}
+                      iconColor={theme.colors.secondaryContainer}
                       handler={() =>
                         purgeWallet(
                           card,
@@ -123,6 +123,7 @@ export default function CardSettingsScreen(): ReactNode {
       <View style={{margin: 16, gap: 8}}>
         <AsyncButton
           mode="contained"
+          buttonColor={theme.colors.primaryContainer}
           handler={() => changeAccessCode(card.cardId)}
         >
           Change access code

@@ -178,7 +178,7 @@ export default function IndexScreen(): ReactNode {
                           icon={accordionIcon}
                           color={
                             color === theme.colors.primary
-                              ? theme.colors.onPrimary
+                              ? theme.colors.onSurface
                               : color
                           }
                           style={style}
@@ -243,6 +243,7 @@ export default function IndexScreen(): ReactNode {
               <Button
                 mode="contained"
                 disabled={pendingSessionRequests.length === 0}
+                buttonColor={theme.colors.primaryContainer}
                 onPress={() => {
                   router.push({
                     pathname: '/view-request',
@@ -263,8 +264,8 @@ export default function IndexScreen(): ReactNode {
                   position: 'absolute',
                   top: -8,
                   right: 0,
-                  backgroundColor: theme.colors.secondary,
-                  color: theme.colors.onSecondary,
+                  backgroundColor: theme.colors.secondaryContainer,
+                  color: theme.colors.onSecondaryContainer,
                 }}
               >
                 {pendingSessionRequests.length}

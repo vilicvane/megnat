@@ -96,6 +96,7 @@ export default function WalletScreen(): ReactNode {
                 path !== undefined && path !== DERIVATION_PATH_DEFAULT
                   ? ({style}) => (
                       <AsyncIconButton
+                        icon="close"
                         style={[
                           style,
                           {
@@ -103,7 +104,6 @@ export default function WalletScreen(): ReactNode {
                             marginRight: -8,
                           },
                         ]}
-                        icon="close"
                         handler={async () => {
                           await removeDerivation(
                             walletStorageService,
@@ -138,6 +138,7 @@ export default function WalletScreen(): ReactNode {
         {derivable && (
           <AsyncButton
             mode="contained"
+            buttonColor={theme.colors.primaryContainer}
             handler={async () => {
               if (!addingDerivation) {
                 setAddingDerivation(true);

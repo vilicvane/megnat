@@ -6,6 +6,7 @@ import {ScrollView, ToastAndroid, View} from 'react-native';
 import {Appbar, Badge, Checkbox, List} from 'react-native-paper';
 
 import {PendingRequestList} from '../components/pending-request-list.js';
+import {SessionIcon} from '../components/session-icon.js';
 import {AsyncButton, AsyncIconButton} from '../components/ui/index.js';
 import {useEntrances} from '../entrances.js';
 import type {WalletKitService} from '../services/index.js';
@@ -106,7 +107,14 @@ export default function SessionScreen(): ReactNode {
       <ScrollView contentContainerStyle={{flexGrow: 1}}>
         <List.Section>
           <List.Item
-            title={getSessionDisplayName(session)}
+            left={({style}) => (
+              <View style={[style, {alignSelf: 'center'}]}>
+                <List.Icon
+                  icon={() => <SessionIcon metadata={session.peer.metadata} />}
+                />
+              </View>
+            )}
+            title={getSessionDisplayName(session.peer.metadata)}
             description={session.peer.metadata.url}
           />
         </List.Section>
@@ -133,7 +141,7 @@ export default function SessionScreen(): ReactNode {
                     icon={wallet.chainCode ? 'key-link' : 'key'}
                     color={
                       color === theme.colors.primary
-                        ? theme.colors.onPrimary
+                        ? theme.colors.onSurface
                         : color
                     }
                     style={style}
@@ -153,8 +161,8 @@ export default function SessionScreen(): ReactNode {
                           },
                           overridden
                             ? {
-                                backgroundColor: theme.colors.primary,
-                                color: theme.colors.onPrimary,
+                                backgroundColor: theme.colors.primaryContainer,
+                                color: theme.colors.onPrimaryContainer,
                               }
                             : {
                                 backgroundColor: theme.colors.elevation.level2,
@@ -191,8 +199,8 @@ export default function SessionScreen(): ReactNode {
                             status={checked ? 'checked' : 'unchecked'}
                             {...(overridden
                               ? {
-                                  color: theme.colors.primary,
-                                  uncheckedColor: theme.colors.primary,
+                                  color: theme.colors.primaryContainer,
+                                  uncheckedColor: theme.colors.primaryContainer,
                                 }
                               : {
                                   color: theme.colors.onSurface,
@@ -243,7 +251,7 @@ export default function SessionScreen(): ReactNode {
                 icon="key-remove"
                 color={
                   color === theme.colors.primary
-                    ? theme.colors.onPrimary
+                    ? theme.colors.onSurface
                     : color
                 }
                 style={style}
@@ -263,7 +271,7 @@ export default function SessionScreen(): ReactNode {
       <View style={{margin: 16, flexDirection: 'row', gap: 8}}>
         <AsyncButton
           mode="contained"
-          buttonColor={theme.colors.secondary}
+          buttonColor={theme.colors.secondaryContainer}
           style={{flex: 1, flexBasis: 0}}
           handler={() => walletKitService.disconnect(session)}
         >
@@ -272,6 +280,7 @@ export default function SessionScreen(): ReactNode {
         <AsyncButton
           mode="contained"
           disabled={!ableToUpdate}
+          buttonColor={theme.colors.primaryContainer}
           style={{flex: 1, flexBasis: 0}}
           handler={async () => {
             await walletKitService.updateSession(session, selectedAddresses);

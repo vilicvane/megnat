@@ -6,11 +6,13 @@ import {Appbar, TextInput} from 'react-native-paper';
 import {AsyncButton} from '../components/ui/index.js';
 import {useEntrances} from '../entrances.js';
 import type {ChainService} from '../services/index.js';
+import {useTheme} from '../theme.js';
 import {eip155ChainIdToString} from '../utils/index.js';
-
 const RPC_PROTOCOL_PATTERN = /^https?:$/;
 
 export default function EditCustomChainScreen(): ReactNode {
+  const theme = useTheme();
+
   const {id} = useLocalSearchParams<{id?: string}>();
 
   const {chainService} = useEntrances();
@@ -79,6 +81,7 @@ export default function EditCustomChainScreen(): ReactNode {
         <AsyncButton
           mode="contained"
           disabled={!valid}
+          buttonColor={theme.colors.primaryContainer}
           handler={() => save(chainService, {id: chainId, name, rpc: rpcURL})}
         >
           Save

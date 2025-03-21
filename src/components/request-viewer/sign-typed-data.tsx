@@ -1,4 +1,4 @@
-import type {PendingRequestTypes} from '@walletconnect/types';
+import type {PendingRequestTypes, SessionTypes} from '@walletconnect/types';
 import {router} from 'expo-router';
 import type {ReactNode} from 'react';
 import {ScrollView, ToastAndroid, View} from 'react-native';
@@ -12,13 +12,18 @@ import {
   useChainDisplayName,
 } from '../../services/index.js';
 import {useTheme} from '../../theme.js';
+import {SessionVerification} from '../session-verification.js';
 import {AsyncButton, ListItemWithDescriptionBlock} from '../ui/index.js';
 
 export type SignTypedDataProps = {
+  session: SessionTypes.Struct;
   request: PendingRequestTypes.Struct;
 };
 
-export function SignTypedData({request}: SignTypedDataProps): ReactNode {
+export function SignTypedData({
+  session,
+  request,
+}: SignTypedDataProps): ReactNode {
   const theme = useTheme();
 
   const {chainService, walletKitService, walletStorageService} = useEntrances();
@@ -46,6 +51,10 @@ export function SignTypedData({request}: SignTypedDataProps): ReactNode {
         <Appbar.BackAction onPress={() => router.back()} />
         <Appbar.Content title="Sign typed data" />
       </Appbar.Header>
+      <SessionVerification
+        metadata={session.peer.metadata}
+        context={request.verifyContext}
+      />
       <ScrollView contentContainerStyle={{flexGrow: 1}}>
         <List.Section>
           <List.Item title="Chain" description={chainName} />
@@ -67,7 +76,7 @@ export function SignTypedData({request}: SignTypedDataProps): ReactNode {
         >
           <AsyncButton
             mode="contained"
-            buttonColor={theme.colors.secondary}
+            buttonColor={theme.colors.secondaryContainer}
             style={{flex: 1, flexBasis: 0}}
             handler={() => reject(walletKitService, request)}
           >
@@ -75,8 +84,9 @@ export function SignTypedData({request}: SignTypedDataProps): ReactNode {
           </AsyncButton>
           <AsyncButton
             mode="contained"
-            style={{flex: 1, flexBasis: 0}}
             disabled={signDisabled}
+            buttonColor={theme.colors.primaryContainer}
+            style={{flex: 1, flexBasis: 0}}
             handler={() =>
               sign(
                 walletKitService,

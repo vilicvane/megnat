@@ -12,6 +12,8 @@ import {useTheme} from '../theme.js';
 const INFURA_KEY_PATTERN = /^(?:|[\da-f]{32})$/;
 
 export default function ChainSettingsScreen(): ReactNode {
+  const theme = useTheme();
+
   const {chainService} = useEntrances();
 
   const customChains = useCustomChains(chainService);
@@ -54,6 +56,7 @@ export default function ChainSettingsScreen(): ReactNode {
         <View style={{margin: 16}}>
           <Button
             mode="contained"
+            buttonColor={theme.colors.primaryContainer}
             onPress={() => router.push('/edit-custom-chain')}
           >
             Add custom chain

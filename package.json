@@ -55,11 +55,13 @@
     "react-native-reanimated": "^3.17.1",
     "react-native-safe-area-context": "^5.3.0",
     "react-native-screens": "^4.9.2",
+    "react-native-svg": "^15.11.2",
     "react-native-vector-icons": "^10.2.0",
     "react-native-web": "^0.19.13",
     "react-native-webview": "^13.13.4",
     "react-use-event-hook": "^0.9.6",
-    "tslib": "^2.8.1"
+    "tslib": "^2.8.1",
+    "expo-image": "~2.0.6"
   },
   "devDependencies": {
     "@babel/core": "^7.26.10",

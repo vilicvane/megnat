@@ -1,6 +1,6 @@
 import {router} from 'expo-router';
 import {type ReactNode, useState} from 'react';
-import {ScrollView, ToastAndroid, View} from 'react-native';
+import {ScrollView, View} from 'react-native';
 import {Appbar, Badge, Checkbox, List} from 'react-native-paper';
 
 import {
@@ -51,7 +51,7 @@ export default function ConnectScreen(): ReactNode {
                     icon={wallet.chainCode ? 'key-link' : 'key'}
                     color={
                       color === theme.colors.primary
-                        ? theme.colors.onPrimary
+                        ? theme.colors.onSurface
                         : color
                     }
                     style={style}
@@ -67,8 +67,8 @@ export default function ConnectScreen(): ReactNode {
                         style={{
                           alignSelf: 'center',
                           marginRight: 12,
-                          backgroundColor: theme.colors.primary,
-                          color: theme.colors.onPrimary,
+                          backgroundColor: theme.colors.primaryContainer,
+                          color: theme.colors.onPrimaryContainer,
                         }}
                       >
                         {checked}
@@ -94,7 +94,7 @@ export default function ConnectScreen(): ReactNode {
                         >
                           <Checkbox
                             status={checked ? 'checked' : 'unchecked'}
-                            color={theme.colors.primary}
+                            color={theme.colors.primaryContainer}
                           />
                         </View>
                       )}
@@ -126,6 +126,7 @@ export default function ConnectScreen(): ReactNode {
         <AsyncButton
           mode="contained"
           disabled={!ableToConnect}
+          buttonColor={theme.colors.primaryContainer}
           handler={async () => {
             const uri = await openQrCodeInputModal(/^wc:/);
 
@@ -157,14 +158,16 @@ async function connect(
   const message = await walletKitService.connect(uri, addresses);
 
   if (!message) {
-    ToastAndroid.show('Session connected', ToastAndroid.SHORT);
     router.back();
     return;
   }
 
-  uiService.state.pendingSessionAuthentication = message;
+  uiService.state.pendingSession = message;
 
   router.replace({
-    pathname: '/session-authenticate',
+    pathname:
+      message.type === 'authenticate'
+        ? '/session-authenticate'
+        : '/session-proposal',
   });
 }

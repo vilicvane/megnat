@@ -1,6 +1,6 @@
 import {router, useLocalSearchParams} from 'expo-router';
 import type {ReactNode} from 'react';
-import {ScrollView, ToastAndroid, View} from 'react-native';
+import {ScrollView, View} from 'react-native';
 import {Appbar, List} from 'react-native-paper';
 
 import {PendingRequestList} from '../components/pending-request-list.js';
@@ -16,9 +16,12 @@ import {
   useWalletKitPendingSessionRequests,
   useWalletKitSessions,
 } from '../services/index.js';
+import {useTheme} from '../theme.js';
 import {copy} from '../utils/index.js';
 
 export default function WalletAccountScreen(): ReactNode {
+  const theme = useTheme();
+
   const {address} = useLocalSearchParams<{address: string}>();
 
   const {walletKitService, uiService, walletStorageService} = useEntrances();
@@ -69,6 +72,7 @@ export default function WalletAccountScreen(): ReactNode {
       <View style={{margin: 16}}>
         <AsyncButton
           mode="contained"
+          buttonColor={theme.colors.primaryContainer}
           handler={async () => {
             const uri = await openQrCodeInputModal(/^wc:/);
 
@@ -95,13 +99,15 @@ async function connect(
   const message = await walletKitService.connect(uri, [address]);
 
   if (!message) {
-    ToastAndroid.show('Session connected', ToastAndroid.SHORT);
     return;
   }
 
-  uiService.state.pendingSessionAuthentication = message;
+  uiService.state.pendingSession = message;
 
   router.push({
-    pathname: '/session-authenticate',
+    pathname:
+      message.type === 'authenticate'
+        ? '/session-authenticate'
+        : '/session-proposal',
   });
 }
