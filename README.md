@@ -33,6 +33,13 @@ Megnat uses WalletConnect just like Tangem, but is solely built as a **signing a
 
 Currently it is **EVM-only**, and there is no plan to support other chains unless it is highly requested.
 
+## Roadmap
+
+- [ ] iOS support.
+- [ ] Security key.
+- [ ] Transaction data decoding.
+- [ ] Pending transactions (to replace or cancel).
+
 ## Support our work
 
 - Buy Tangem cards using Megnat [referral link](https://megnat.app/tangem).
