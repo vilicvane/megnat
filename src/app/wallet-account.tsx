@@ -1,4 +1,3 @@
-import * as Clipboard from 'expo-clipboard';
 import {router, useLocalSearchParams} from 'expo-router';
 import type {ReactNode} from 'react';
 import {ScrollView, ToastAndroid, View} from 'react-native';
@@ -17,6 +16,7 @@ import {
   useWalletKitPendingSessionRequests,
   useWalletKitSessions,
 } from '../services/index.js';
+import {copy} from '../utils/index.js';
 
 export default function WalletAccountScreen(): ReactNode {
   const {address} = useLocalSearchParams<{address: string}>();
@@ -82,12 +82,6 @@ export default function WalletAccountScreen(): ReactNode {
       </View>
     </>
   );
-}
-
-async function copy(text: string): Promise<void> {
-  await Clipboard.setStringAsync(text);
-
-  ToastAndroid.show('Copied to clipboard', ToastAndroid.SHORT);
 }
 
 async function connect(

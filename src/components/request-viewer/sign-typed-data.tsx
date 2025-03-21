@@ -54,6 +54,7 @@ export function SignTypedData({request}: SignTypedDataProps): ReactNode {
           <ListItemWithDescriptionBlock
             title="Message"
             description={JSON.stringify(data.message, null, 2)}
+            dataToCopy={dataJSON}
           />
         </List.Section>
         <View

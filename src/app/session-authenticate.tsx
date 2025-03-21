@@ -67,6 +67,7 @@ export default function SessionAuthenticateScreen(): ReactNode {
           <ListItemWithDescriptionBlock
             title="Message"
             description={displayMessage}
+            dataToCopy={authentication.message}
           />
         </List.Section>
         <View

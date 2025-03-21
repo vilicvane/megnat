@@ -64,7 +64,11 @@ export function SignMessage({request}: SignMessageProps): ReactNode {
         <List.Section>
           <List.Item title="Chain" description={chainName} />
           <List.Item title="Signer" description={address} />
-          <ListItemWithDescriptionBlock title="Message" description={message} />
+          <ListItemWithDescriptionBlock
+            title="Message"
+            description={message}
+            dataToCopy={message}
+          />
         </List.Section>
         <View
           style={{

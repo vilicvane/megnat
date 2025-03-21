@@ -109,7 +109,11 @@ export function SendTransaction({request}: SendTransactionProps): ReactNode {
           <List.Item title="From" description={from} />
           <List.Item title="To" description={to} />
           {data && (
-            <ListItemWithDescriptionBlock title="Data" description={data} />
+            <ListItemWithDescriptionBlock
+              title="Data"
+              description={data}
+              dataToCopy={data}
+            />
           )}
           <List.Item title="Gas limit" description={gasLimit.toString()} />
           <List.Item title="Max gas fee" description={maxGasText} />
