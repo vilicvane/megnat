@@ -36,4 +36,4 @@ Currently it is **EVM-only**, and there is no plan to support other chains unles
 
 ## License
 
-This license is yet to be decided. The source code is made public for transparency only, and thus no permission is granted.
+MIT License.

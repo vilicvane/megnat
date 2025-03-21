@@ -5,6 +5,7 @@
     "name": "megnat",
     "author": "vilicvane",
     "repository": "https://github.com/vilicvane/megnat.git",
+    "license": "MIT",
     "badges": {
       "discord": "https://discord.gg/mEFzC6JRNg",
       "repo": true

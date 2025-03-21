@@ -4,6 +4,7 @@
   "private": true,
   "main": "expo-router/entry",
   "repository": "https://github.com/vilicvane/megnat.git",
+  "license": "MIT",
   "author": "vilicvane",
   "type": "module",
   "scripts": {
