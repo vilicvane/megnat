@@ -2,6 +2,7 @@
   "name": "megnat",
   "version": "0.0.0",
   "repository": "https://github.com/vilicvane/megnat.git",
+  "license": "MIT",
   "author": "vilicvane",
   "type": "module",
   "scripts": {
