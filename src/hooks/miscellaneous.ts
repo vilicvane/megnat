@@ -1,5 +1,5 @@
 import type {EffectCallback} from 'react';
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import useEvent from 'react-use-event-hook';
 
 import type {Event} from '../utils/index.js';
@@ -9,12 +9,36 @@ export function useMountEffect(callback: EffectCallback): void {
   useEffect(callback, []);
 }
 
-export function useAsyncValue<T>(initializer: () => Promise<T>): T | undefined {
-  const [state, setState] = useState<T>();
+export function useAsyncValue<T>(
+  initializer: () => Promise<T>,
+  deps: unknown[],
+): T | undefined {
+  const [state, setState] = useState<{
+    update: number;
+    value: T;
+  }>();
 
-  useMountEffect(() => void initializer().then(setState));
+  const updateRef = useRef(0);
 
-  return state;
+  useEffect(() => {
+    const update = ++updateRef.current;
+
+    void initializer().then(value =>
+      setState(state => {
+        if (state && state.update >= update) {
+          return state;
+        }
+
+        return {
+          update,
+          value,
+        };
+      }),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+
+  return state?.value;
 }
 
 export function useAsyncValueUpdate<T>(

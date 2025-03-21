@@ -1,6 +1,5 @@
 import type {PendingRequestTypes, SessionTypes} from '@walletconnect/types';
-import type {ethers} from 'ethers';
-import {formatEther, toBigInt} from 'ethers';
+import {ethers, formatEther, toBigInt} from 'ethers';
 import * as Clipboard from 'expo-clipboard';
 import {router} from 'expo-router';
 import {openBrowserAsync} from 'expo-web-browser';
@@ -11,7 +10,7 @@ import {Appbar, List} from 'react-native-paper';
 import type {Wallet, WalletDerivation} from '../../core/index.js';
 import {TangemSigner} from '../../core/index.js';
 import {useEntrances} from '../../entrances.js';
-import {useAsyncValueUpdate} from '../../hooks/index.js';
+import {useAsyncValue, useAsyncValueUpdate} from '../../hooks/index.js';
 import {
   type ChainService,
   type WalletKitService,
@@ -91,12 +90,15 @@ export function SendTransaction({
     return provider.getFeeData();
   });
 
-  const gasLimit = toBigInt(gasLimitHex);
+  const gasLimit = gasLimitHex ? toBigInt(gasLimitHex) : undefined;
+  const gasLimitText = gasLimit ? gasLimit.toString() : '-';
+
   const maxFeePerGas = feeData?.maxFeePerGas ?? feeData?.gasPrice;
 
-  const maxGasText = maxFeePerGas ? formatEther(gasLimit * maxFeePerGas) : '-';
+  const maxGasText =
+    maxFeePerGas && gasLimit ? formatEther(gasLimit * maxFeePerGas) : '-';
   const estimatedGasFeeText =
-    feeData?.gasPrice && feeData.gasPrice !== maxFeePerGas
+    gasLimit && feeData?.gasPrice && feeData.gasPrice !== maxFeePerGas
       ? formatEther(gasLimit * feeData.gasPrice)
       : undefined;
 
@@ -117,14 +119,8 @@ export function SendTransaction({
           <List.Item title="Chain" description={chainName} />
           <List.Item title="From" description={from} />
           <List.Item title="To" description={to} />
-          {data && (
-            <ListItemWithDescriptionBlock
-              title="Data"
-              description={data}
-              dataToCopy={data}
-            />
-          )}
-          <List.Item title="Gas limit" description={gasLimit.toString()} />
+          {data && data !== '0x' && <TransactionDataListItem data={data} />}
+          <List.Item title="Gas limit" description={gasLimitText} />
           <List.Item title="Max gas fee" description={maxGasText} />
           {estimatedGasFeeText && (
             <List.Item
@@ -216,7 +212,7 @@ async function sign(
     data: string;
     value: bigint | undefined;
     nonce: number | undefined;
-    gasLimit: bigint;
+    gasLimit: bigint | undefined;
     gasPrice: bigint | undefined;
     maxFeePerGas: bigint | undefined;
     maxPriorityFeePerGas: bigint | undefined;
@@ -264,4 +260,68 @@ async function sign(
   );
 
   router.back();
+}
+
+export function TransactionDataListItem({data}: {data: string}): ReactNode {
+  const decodedData = useAsyncValue(() => decodeTransactionData(data), [data]);
+
+  return (
+    <ListItemWithDescriptionBlock
+      title="Data"
+      description={decodedData ?? data}
+      dataToCopy={data}
+    />
+  );
+}
+
+const SIGNATURE_HASH_BYTE_LIKE_LENGTH = 10;
+
+async function decodeTransactionData(
+  data: string,
+): Promise<string | undefined> {
+  if (data.length < SIGNATURE_HASH_BYTE_LIKE_LENGTH) {
+    return undefined;
+  }
+
+  const signatureHash = data.slice(0, SIGNATURE_HASH_BYTE_LIKE_LENGTH);
+
+  const {results: signatures} = await fetch(
+    `https://www.4byte.directory/api/v1/signatures/?hex_signature=${signatureHash}&ordering=created_at`,
+  ).then(response => response.json());
+
+  const decoded = (() => {
+    for (const signature of signatures) {
+      const iface = new ethers.Interface([
+        `function ${signature.text_signature}`,
+      ]);
+      try {
+        return iface.parseTransaction({data});
+      } catch {
+        continue;
+      }
+    }
+
+    return undefined;
+  })();
+
+  if (!decoded) {
+    return undefined;
+  }
+
+  return (
+    decoded.name +
+    JSON.stringify(
+      decoded.args,
+      (_key, value) => {
+        if (typeof value === 'bigint') {
+          return `${value.toString()}n`;
+        }
+
+        return value;
+      },
+      2,
+    )
+      .replace(/^\[/, '(')
+      .replace(/\]$/, ')')
+  );
 }
