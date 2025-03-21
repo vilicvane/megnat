@@ -21,6 +21,10 @@ It is created to unleash the full potential of Tangem cards and provide a possib
 - 💰 Respect dApps' gas price settings, big big money saved over time.
 - 🔌 Custom chains support for advanced users.
 
+## Downloads
+
+You can find the latest version of the app on [GitHub Releases](https://github.com/vilicvane/megnat/releases/latest).
+
 ## A signing app
 
 Megnat uses WalletConnect just like Tangem, but is solely built as a **signing app**, meaning built-in token management and DeFi features are non-goals.
