@@ -40,6 +40,7 @@ Currently it is **EVM-only**, and there is no plan to support other chains unles
 - [ ] Security key.
 - [ ] Transaction data decoding.
 - [ ] Pending transactions (to replace or cancel).
+- [ ] Card backup.
 
 ## Support our work
 
