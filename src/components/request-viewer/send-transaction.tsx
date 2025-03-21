@@ -118,7 +118,14 @@ export function SendTransaction({
         <List.Section>
           <List.Item title="Chain" description={chainName} />
           <List.Item title="From" description={from} />
-          <List.Item title="To" description={to} />
+          <List.Item
+            title="To"
+            description={to}
+            descriptionStyle={{textDecorationLine: 'underline'}}
+            onPress={() =>
+              openBrowserAsync(chainService.getAddressURL(chainId, to))
+            }
+          />
           {data && data !== '0x' && <TransactionDataListItem data={data} />}
           <List.Item title="Gas limit" description={gasLimitText} />
           <List.Item title="Max gas fee" description={maxGasText} />

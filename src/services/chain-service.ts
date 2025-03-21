@@ -102,6 +102,13 @@ export class ChainService {
     return `${url}/tx/${txHash}`;
   }
 
+  getAddressURL(chainId: string, address: string): string {
+    const url =
+      this.listedChainMap.get(chainId)?.explorer ?? CHAIN_EXPLORER_URL_FALLBACK;
+
+    return `${url}/address/${address}`;
+  }
+
   readonly keyUpdate = new Event<void>('key-update');
 
   getInfuraKey(): string | undefined {
