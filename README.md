@@ -17,7 +17,8 @@ It is created to unleash the full potential of Tangem cards and provide a possib
 
 ## Highlights
 
-- 📑 Multiple wallets on a single card.
+- 🕵️ Transaction data decoding & verification against source code if available.
+- 📑 Add multiple wallets on a single card.
 - 🔑 Import & sign with **private key wallet** (so your wallet with vanity address can be safely stored on the card).
 - 💰 Respect dApps' gas price settings, big big money saved over time.
 - 🔌 Custom chains support for advanced users.
@@ -37,8 +38,8 @@ Currently it is **EVM-only**, and there is no plan to support other chains unles
 ## Roadmap
 
 - [ ] iOS support.
-- [ ] Security key.
-- [ ] Transaction data decoding.
+- [ ] Security key (if possible).
+- [x] Transaction data decoding.
 - [ ] Pending transactions (to replace or cancel).
 - [ ] Card backup.
 
