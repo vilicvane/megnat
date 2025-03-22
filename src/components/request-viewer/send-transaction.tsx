@@ -419,7 +419,7 @@ async function decodeTransactionData(
       .replace(/^\[/, '(')
       .replace(/\]$/, ')');
 
-  const addresses = extractAddressesFromDecodedTransaction(decoded);
+  const addresses = extractAddressesFromDecodedTransaction(decoded, address);
 
   return [decodedData, addresses, verified];
 
