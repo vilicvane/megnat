@@ -18,7 +18,11 @@ import {
   useChainDisplayName,
 } from '../../services/index.js';
 import {useTheme} from '../../theme.js';
-import {eip155ChainIdToBigInt} from '../../utils/index.js';
+import {
+  eip155ChainIdToBigInt,
+  extractAddressesFromDecodedTransaction,
+} from '../../utils/index.js';
+import {AddressesListItem} from '../addresses-list-item.js';
 import {SessionVerification} from '../session-verification.js';
 import {AsyncButton, ListItemWithDescriptionBlock} from '../ui/index.js';
 
@@ -129,6 +133,7 @@ export function SendTransaction({
           />
           {data && data !== '0x' && (
             <TransactionDataListItem
+              chainId={chainId}
               address={to}
               data={data}
               provider={provider}
@@ -277,20 +282,24 @@ async function sign(
 }
 
 export function TransactionDataListItem({
+  chainId,
   address,
   data,
   provider,
 }: {
+  chainId: string;
   address: string;
   data: string;
   provider: ethers.JsonRpcProvider | undefined;
 }): ReactNode {
   const theme = useTheme();
 
-  const [decoded, verified] = useAsyncValue(
+  const {chainService} = useEntrances();
+
+  const [decoded, addresses, verified] = useAsyncValue(
     () => decodeTransactionData(address, data, provider),
     [data, provider],
-  ) ?? [data, undefined];
+  ) ?? [data, [], undefined];
 
   const verifiedIcon = (() => {
     switch (verified) {
@@ -313,37 +322,48 @@ export function TransactionDataListItem({
   })();
 
   return (
-    <ListItemWithDescriptionBlock
-      title={
-        <View
-          style={{
-            width: '100%',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <Text style={{fontSize: 16}}>Data</Text>
-          {verifiedIcon && (
-            <IconButton
-              icon={verifiedIcon.icon}
-              iconColor={verifiedIcon.color}
-              size={20}
-              style={{
-                margin: 0,
-                marginRight: -8,
-                height: 20,
-              }}
-              onPress={() =>
-                Alert.alert('Signature verification', verifiedIcon.message)
-              }
-            />
-          )}
-        </View>
-      }
-      description={decoded}
-      dataToCopy={data}
-    />
+    <>
+      <ListItemWithDescriptionBlock
+        title={
+          <View
+            style={{
+              width: '100%',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{fontSize: 16}}>Data</Text>
+            {verifiedIcon && (
+              <IconButton
+                icon={verifiedIcon.icon}
+                iconColor={verifiedIcon.color}
+                size={20}
+                style={{
+                  margin: 0,
+                  marginRight: -8,
+                  height: 20,
+                }}
+                onPress={() =>
+                  Alert.alert('Signature verification', verifiedIcon.message)
+                }
+              />
+            )}
+          </View>
+        }
+        description={decoded}
+        dataToCopy={data}
+      />
+      {addresses.length > 0 && (
+        <AddressesListItem
+          addresses={addresses}
+          titleSuffix=" in data"
+          onAddressPress={address =>
+            openBrowserAsync(chainService.getAddressURL(chainId, address))
+          }
+        />
+      )}
+    </>
   );
 }
 
@@ -353,7 +373,9 @@ async function decodeTransactionData(
   address: string,
   data: string,
   provider: ethers.JsonRpcProvider | undefined,
-): Promise<[decoded: string, verified: boolean] | undefined> {
+): Promise<
+  [decoded: string, addresses: string[], verified: boolean] | undefined
+> {
   if (data.length < SIGNATURE_HASH_BYTE_LIKE_LENGTH) {
     return undefined;
   }
@@ -380,23 +402,25 @@ async function decodeTransactionData(
     return undefined;
   }
 
-  return [
+  const decodedData =
     decoded.name +
-      JSON.stringify(
-        decoded.args,
-        (_key, value) => {
-          if (typeof value === 'bigint') {
-            return `${value.toString()}n`;
-          }
+    JSON.stringify(
+      decoded.args,
+      (_key, value) => {
+        if (typeof value === 'bigint') {
+          return `${value.toString()}n`;
+        }
 
-          return value;
-        },
-        2,
-      )
-        .replace(/^\[/, '(')
-        .replace(/\]$/, ')'),
-    verified,
-  ];
+        return value;
+      },
+      2,
+    )
+      .replace(/^\[/, '(')
+      .replace(/\]$/, ')');
+
+  const addresses = extractAddressesFromDecodedTransaction(decoded);
+
+  return [decodedData, addresses, verified];
 
   async function decodeBySourceCode(
     address: string,

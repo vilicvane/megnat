@@ -1,5 +1,7 @@
 import type {PendingRequestTypes, SessionTypes} from '@walletconnect/types';
+import {ethers} from 'ethers';
 import {router} from 'expo-router';
+import {openBrowserAsync} from 'expo-web-browser';
 import type {ReactNode} from 'react';
 import React from 'react';
 import {ScrollView, ToastAndroid, View} from 'react-native';
@@ -14,7 +16,8 @@ import {
   useChainDisplayName,
 } from '../../services/index.js';
 import {useTheme} from '../../theme.js';
-import {isValidUTF8} from '../../utils/index.js';
+import {extractAddressesFromMessage, isValidUTF8} from '../../utils/index.js';
+import {AddressesListItem} from '../addresses-list-item.js';
 import {SessionVerification} from '../session-verification.js';
 import {AsyncButton, ListItemWithDescriptionBlock} from '../ui/index.js';
 
@@ -46,9 +49,13 @@ export function SignMessage({session, request}: SignMessageProps): ReactNode {
     [address, dataHex] = params;
   }
 
+  address = ethers.getAddress(address);
+
   const data = Buffer.from(dataHex.slice(2), 'hex');
 
   const message = isValidUTF8(data) ? data.toString() : dataHex;
+
+  const otherAddresses = extractAddressesFromMessage(message, address);
 
   const wallet = walletStorageService.getWalletByAddress(address);
 
@@ -75,6 +82,16 @@ export function SignMessage({session, request}: SignMessageProps): ReactNode {
             description={message}
             dataToCopy={message}
           />
+          {otherAddresses.length > 0 && (
+            <AddressesListItem
+              addresses={otherAddresses}
+              titlePrefix="Other"
+              titleSuffix="in message"
+              onAddressPress={address =>
+                openBrowserAsync(chainService.getAddressURL(chainId, address))
+              }
+            />
+          )}
         </List.Section>
         <View
           style={{

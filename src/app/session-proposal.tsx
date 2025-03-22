@@ -2,8 +2,9 @@ import {router} from 'expo-router';
 import type {ReactNode} from 'react';
 import React, {useEffect, useState} from 'react';
 import {Alert, ScrollView, ToastAndroid, View} from 'react-native';
-import {Appbar, List, Text} from 'react-native-paper';
+import {Appbar, List} from 'react-native-paper';
 
+import {AddressesListItem} from '../components/addresses-list-item.js';
 import {SessionVerification} from '../components/session-verification.js';
 import {AsyncButton} from '../components/ui/index.js';
 import {useEntrances} from '../entrances.js';
@@ -68,24 +69,7 @@ export default function SessionProposalScreen(): ReactNode {
               descriptionNumberOfLines={0}
             />
           )}
-          <List.Item
-            title={addresses.length > 1 ? 'Addresses' : 'Address'}
-            description={
-              <>
-                {addresses.map(address => (
-                  <View key={address}>
-                    <Text
-                      numberOfLines={1}
-                      ellipsizeMode="middle"
-                      style={{color: theme.colors.onSurfaceVariant}}
-                    >
-                      {address}
-                    </Text>
-                  </View>
-                ))}
-              </>
-            }
-          />
+          <AddressesListItem addresses={addresses} />
         </List.Section>
       </ScrollView>
       <View
