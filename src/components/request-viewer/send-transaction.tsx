@@ -5,8 +5,9 @@ import {router} from 'expo-router';
 import {openBrowserAsync} from 'expo-web-browser';
 import {type ReactNode, useState} from 'react';
 import {Alert, ScrollView, View} from 'react-native';
-import {Appbar, List} from 'react-native-paper';
+import {Appbar, IconButton, List, Text} from 'react-native-paper';
 
+import {MEGNAT_API_URL} from '../../constants/index.js';
 import type {Wallet, WalletDerivation} from '../../core/index.js';
 import {TangemSigner} from '../../core/index.js';
 import {useEntrances} from '../../entrances.js';
@@ -126,7 +127,13 @@ export function SendTransaction({
               openBrowserAsync(chainService.getAddressURL(chainId, to))
             }
           />
-          {data && data !== '0x' && <TransactionDataListItem data={data} />}
+          {data && data !== '0x' && (
+            <TransactionDataListItem
+              address={to}
+              data={data}
+              provider={provider}
+            />
+          )}
           <List.Item title="Gas limit" description={gasLimitText} />
           <List.Item title="Max gas fee" description={maxGasText} />
           {estimatedGasFeeText && (
@@ -269,13 +276,72 @@ async function sign(
   router.back();
 }
 
-export function TransactionDataListItem({data}: {data: string}): ReactNode {
-  const decodedData = useAsyncValue(() => decodeTransactionData(data), [data]);
+export function TransactionDataListItem({
+  address,
+  data,
+  provider,
+}: {
+  address: string;
+  data: string;
+  provider: ethers.JsonRpcProvider | undefined;
+}): ReactNode {
+  const theme = useTheme();
+
+  const [decoded, verified] = useAsyncValue(
+    () => decodeTransactionData(address, data, provider),
+    [data, provider],
+  ) ?? [data, undefined];
+
+  const verifiedIcon = (() => {
+    switch (verified) {
+      case true:
+        return {
+          icon: 'check-decagram',
+          color: theme.colors.primary,
+          message: 'The signature is verified against contract source code.',
+        };
+      case false:
+        return {
+          icon: 'alert-circle',
+          color: theme.colors.warning,
+          message:
+            'The data is decoded but could be disguised, make sure the contract is trusted.',
+        };
+      default:
+        return undefined;
+    }
+  })();
 
   return (
     <ListItemWithDescriptionBlock
-      title="Data"
-      description={decodedData ?? data}
+      title={
+        <View
+          style={{
+            width: '100%',
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{fontSize: 16}}>Data</Text>
+          {verifiedIcon && (
+            <IconButton
+              icon={verifiedIcon.icon}
+              iconColor={verifiedIcon.color}
+              size={20}
+              style={{
+                margin: 0,
+                marginRight: -8,
+                height: 20,
+              }}
+              onPress={() =>
+                Alert.alert('Signature verification', verifiedIcon.message)
+              }
+            />
+          )}
+        </View>
+      }
+      description={decoded}
       dataToCopy={data}
     />
   );
@@ -284,51 +350,135 @@ export function TransactionDataListItem({data}: {data: string}): ReactNode {
 const SIGNATURE_HASH_BYTE_LIKE_LENGTH = 10;
 
 async function decodeTransactionData(
+  address: string,
   data: string,
-): Promise<string | undefined> {
+  provider: ethers.JsonRpcProvider | undefined,
+): Promise<[decoded: string, verified: boolean] | undefined> {
   if (data.length < SIGNATURE_HASH_BYTE_LIKE_LENGTH) {
     return undefined;
   }
 
-  const signatureHash = data.slice(0, SIGNATURE_HASH_BYTE_LIKE_LENGTH);
+  let decoded = await decodeBySourceCode(address, data);
+  let verified = true;
 
-  const {results: signatures} = await fetch(
-    `https://www.4byte.directory/api/v1/signatures/?hex_signature=${signatureHash}&ordering=created_at`,
-  ).then(response => response.json());
+  if (decoded === null) {
+    // Could be a proxy.
 
-  const decoded = (() => {
+    const implAddress = await getImplementationAddress(address);
+
+    if (implAddress) {
+      decoded = await decodeBySourceCode(implAddress, data);
+    }
+  }
+
+  if (!decoded) {
+    decoded = await decodeByFunctionSignature(data);
+    verified = false;
+  }
+
+  if (!decoded) {
+    return undefined;
+  }
+
+  return [
+    decoded.name +
+      JSON.stringify(
+        decoded.args,
+        (_key, value) => {
+          if (typeof value === 'bigint') {
+            return `${value.toString()}n`;
+          }
+
+          return value;
+        },
+        2,
+      )
+        .replace(/^\[/, '(')
+        .replace(/\]$/, ')'),
+    verified,
+  ];
+
+  async function decodeBySourceCode(
+    address: string,
+    data: string,
+  ): Promise<ethers.TransactionDescription | null | undefined> {
+    const iface = await fetch(
+      `${MEGNAT_API_URL}/etherscan?module=contract&action=getabi&address=${address}`,
+    ).then(async response => {
+      if (!response.ok) {
+        console.error(
+          response.status,
+          response.statusText,
+          await response.text(),
+        );
+
+        return undefined;
+      }
+
+      const {status, result} = await response.json();
+
+      if (status === '0') {
+        return undefined;
+      }
+
+      return new ethers.Interface(JSON.parse(result));
+    });
+
+    if (!iface) {
+      return undefined;
+    }
+
+    return iface.parseTransaction({data});
+  }
+
+  async function decodeByFunctionSignature(
+    data: string,
+  ): Promise<ethers.TransactionDescription | undefined> {
+    const signatureHash = data.slice(0, SIGNATURE_HASH_BYTE_LIKE_LENGTH);
+
+    const {results: signatures} = await fetch(
+      `https://www.4byte.directory/api/v1/signatures/?hex_signature=${signatureHash}&ordering=created_at`,
+    ).then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to fetch signatures.');
+      }
+
+      return response.json();
+    });
+
     for (const signature of signatures) {
       const iface = new ethers.Interface([
         `function ${signature.text_signature}`,
       ]);
       try {
-        return iface.parseTransaction({data});
+        return iface.parseTransaction({data}) ?? undefined;
       } catch {
         continue;
       }
     }
 
     return undefined;
-  })();
-
-  if (!decoded) {
-    return undefined;
   }
 
-  return (
-    decoded.name +
-    JSON.stringify(
-      decoded.args,
-      (_key, value) => {
-        if (typeof value === 'bigint') {
-          return `${value.toString()}n`;
-        }
+  async function getImplementationAddress(
+    address: string,
+  ): Promise<string | undefined> {
+    if (!provider) {
+      return undefined;
+    }
 
-        return value;
-      },
-      2,
-    )
-      .replace(/^\[/, '(')
-      .replace(/\]$/, ')')
-  );
+    // EIP-1967 implementation slot (keccak256("eip1967.proxy.implementation") - 1)
+    const implSlot =
+      '0x360894A13BA1A3210667C828492DB98DCA3E2076CC3735A920A3CA505D382BBC';
+
+    const impl = await provider.getStorage(address, implSlot);
+
+    const implAddress = `0x${impl.slice(-40)}`;
+
+    if (implAddress === ethers.ZeroAddress) {
+      return undefined;
+    }
+
+    return implAddress;
+  }
 }

@@ -1,25 +1,28 @@
 import type {ReactNode} from 'react';
 import {Pressable} from 'react-native';
+import type {ListItemProps} from 'react-native-paper';
 import {List, Text, useTheme} from 'react-native-paper';
 
 import {copy} from '../../utils/index.js';
 
-export type ListItemWithDescriptionBlockProps = {
-  title: string;
+export type ListItemWithDescriptionBlockProps = Omit<
+  ListItemProps,
+  'description'
+> & {
   description: string;
   dataToCopy?: string;
 };
 
 export function ListItemWithDescriptionBlock({
-  title,
   description,
   dataToCopy,
+  ...props
 }: ListItemWithDescriptionBlockProps): ReactNode {
   const theme = useTheme();
 
   return (
     <List.Item
-      title={title}
+      {...props}
       description={
         <Pressable
           style={{

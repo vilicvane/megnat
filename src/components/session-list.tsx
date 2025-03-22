@@ -60,13 +60,13 @@ export function SessionList({sessions, address}: SessionListProps): ReactNode {
                 <Text>{getSessionDisplayName(session.peer.metadata)}</Text>
                 {unsupported && (
                   <IconButton
-                    icon="alert-circle"
-                    iconColor={theme.colors.warning}
-                    size={16}
+                    icon="alert-circle-outline"
+                    iconColor={theme.colors.onSurfaceVariant}
+                    size={20}
                     style={{
                       margin: 0,
                       marginLeft: -4,
-                      height: 16,
+                      height: 20,
                     }}
                     onPress={() => {
                       Alert.alert(
