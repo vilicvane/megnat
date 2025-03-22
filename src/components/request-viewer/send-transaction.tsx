@@ -357,7 +357,8 @@ export function TransactionDataListItem({
       {addresses.length > 0 && (
         <AddressesListItem
           addresses={addresses}
-          titleSuffix=" in data"
+          titlePrefix="Other"
+          titleSuffix="in data"
           onAddressPress={address =>
             openBrowserAsync(chainService.getAddressURL(chainId, address))
           }

@@ -80,7 +80,7 @@ export function SignTypedData({
             <AddressesListItem
               addresses={otherAddresses}
               titlePrefix="Other"
-              titleSuffix="in message"
+              titleSuffix="in data"
               onAddressPress={address =>
                 openBrowserAsync(chainService.getAddressURL(chainId, address))
               }
