@@ -38,6 +38,7 @@ Currently it is **EVM-only**, and there is no plan to support other chains unles
 ## Roadmap
 
 - [ ] iOS support.
+- [ ] QR-code based (air-gapped) connection.
 - [ ] Security key (if possible).
 - [x] Transaction data decoding.
 - [ ] Pending transactions (to replace or cancel).
