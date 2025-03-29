@@ -1,5 +1,5 @@
 import type {PendingRequestTypes, SessionTypes} from '@walletconnect/types';
-import {ethers, formatEther, toBigInt} from 'ethers';
+import {ethers, formatEther, formatUnits, toBigInt} from 'ethers';
 import * as Clipboard from 'expo-clipboard';
 import {router} from 'expo-router';
 import {openBrowserAsync} from 'expo-web-browser';
@@ -96,15 +96,23 @@ export function SendTransaction({
   });
 
   const gasLimit = gasLimitHex ? toBigInt(gasLimitHex) : undefined;
-  const gasLimitText = gasLimit ? gasLimit.toString() : '-';
+  const gasLimitText = gasLimit?.toString();
 
   const maxFeePerGas = feeData?.maxFeePerGas ?? feeData?.gasPrice;
 
-  const maxGasText =
-    maxFeePerGas && gasLimit ? formatEther(gasLimit * maxFeePerGas) : '-';
+  const maxGasText = maxFeePerGas
+    ? gasLimit
+      ? `${formatEther(gasLimit * maxFeePerGas)} (${formatUnits(maxFeePerGas, 'gwei')} gwei)`
+      : `Unknown (${formatUnits(maxFeePerGas, 'gwei')} gwei)`
+    : 'Unknown';
   const estimatedGasFeeText =
-    gasLimit && feeData?.gasPrice && feeData.gasPrice !== maxFeePerGas
-      ? formatEther(gasLimit * feeData.gasPrice)
+    feeData?.gasPrice && feeData.gasPrice !== maxFeePerGas
+      ? gasLimit
+        ? `${formatEther(gasLimit * feeData.gasPrice)} (${formatUnits(
+            feeData.gasPrice,
+            'gwei',
+          )} gwei)`
+        : `Unknown (${formatUnits(feeData.gasPrice, 'gwei')} gwei)`
       : undefined;
 
   const signDisabled = !wallet || !provider || !feeData;
@@ -131,6 +139,9 @@ export function SendTransaction({
               openBrowserAsync(chainService.getAddressURL(chainId, to))
             }
           />
+          {value && (
+            <List.Item title="Value" description={formatEther(value)} />
+          )}
           {data && data !== '0x' && (
             <TransactionDataListItem
               chainId={chainId}
@@ -139,7 +150,9 @@ export function SendTransaction({
               provider={provider}
             />
           )}
-          <List.Item title="Gas limit" description={gasLimitText} />
+          {gasLimitText && (
+            <List.Item title="Gas limit" description={gasLimitText} />
+          )}
           <List.Item title="Max gas fee" description={maxGasText} />
           {estimatedGasFeeText && (
             <List.Item
