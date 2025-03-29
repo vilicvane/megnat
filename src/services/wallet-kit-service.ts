@@ -420,7 +420,9 @@ export function useWalletKitSessions(
 
   if (address) {
     sessions = sessions.filter(session =>
-      session.namespaces.eip155.accounts.includes(`eip155:1:${address}`),
+      session.namespaces.eip155.accounts.some(
+        sessionAddress => removeEIP155ChainIdPrefix(sessionAddress) === address,
+      ),
     );
   }
 
