@@ -2,9 +2,8 @@ import {ethers} from 'ethers';
 
 import {
   CHAIN_EXPLORER_URL_FALLBACK,
+  CHAIN_LIST_INFURA_KEY_TEMPLATE,
   CHAIN_LIST_URL,
-  INFURA_RPC_ENDPOINT,
-  INFURA_SUBDOMAIN_DICT,
 } from '../constants/index.js';
 import type {CustomChain, ListedChain} from '../core/index.js';
 import {useEventUpdateValue} from '../hooks/index.js';
@@ -38,6 +37,8 @@ export class ChainService {
 
   private infuraKey: string | undefined;
 
+  private infuraRPCMap!: Map<string, string>;
+
   private constructor(
     private storageService: StorageService,
     customChains: CustomChain[] = [],
@@ -47,10 +48,10 @@ export class ChainService {
     this.infuraKey = infuraKey;
 
     this.customChainMap = new Map(customChains.map(chain => [chain.id, chain]));
-
-    this.updateCustomChains();
-
     this.listedChainMap = new Map(listedChains.map(chain => [chain.id, chain]));
+
+    this.updateInfuraRPCMap();
+    this.updateCustomChains();
 
     void this.fetchChainList();
   }
@@ -95,6 +96,10 @@ export class ChainService {
     );
   }
 
+  getChainListedRPC(chainId: string): string[] {
+    return this.listedChainMap.get(chainId)?.rpc ?? [];
+  }
+
   getTransactionURL(chainId: string, txHash: string): string {
     const url =
       this.listedChainMap.get(chainId)?.explorer ?? CHAIN_EXPLORER_URL_FALLBACK;
@@ -109,8 +114,6 @@ export class ChainService {
     return `${url}/address/${address}`;
   }
 
-  readonly keyUpdate = new Event<void>('key-update');
-
   getInfuraKey(): string | undefined {
     return this.infuraKey;
   }
@@ -118,9 +121,10 @@ export class ChainService {
   async setInfuraKey(key: string): Promise<void> {
     this.infuraKey = key || undefined;
 
+    this.updateInfuraRPCMap();
     this.updateCustomChains();
 
-    this.keyUpdate.emit();
+    this.customChainUpdate.emit();
 
     await this.storageService.set('infuraKey', key);
   }
@@ -130,12 +134,12 @@ export class ChainService {
 
     const aggregatedCustomChains = [
       ...(infuraKey
-        ? Object.entries(INFURA_SUBDOMAIN_DICT as Record<string, string>).map(
-            ([chainId, subdomain]): CustomChain => {
+        ? Array.from(this.infuraRPCMap.entries()).map(
+            ([chainId, rpc]): CustomChain => {
               return {
                 id: chainId,
                 name: undefined,
-                rpc: INFURA_RPC_ENDPOINT(subdomain, infuraKey),
+                rpc: rpc.replace(CHAIN_LIST_INFURA_KEY_TEMPLATE, infuraKey),
               };
             },
           )
@@ -182,8 +186,6 @@ export class ChainService {
     await this.storageService.set('customChains', this.getCustomChains());
   }
 
-  readonly chainListUpdate = new Event<void>('chain-list-update');
-
   private async fetchChainList(): Promise<void> {
     const response = await fetch(CHAIN_LIST_URL);
 
@@ -191,6 +193,7 @@ export class ChainService {
       name: string;
       title?: string;
       chainId: number;
+      rpc?: string[];
       explorers?: {
         name: string;
         url: string;
@@ -209,14 +212,41 @@ export class ChainService {
         id: chainId,
         name,
         explorer,
+        rpc: rawChain.rpc,
       };
     });
 
     this.listedChainMap = new Map(chains.map(chain => [chain.id, chain]));
 
-    this.chainListUpdate.emit();
+    this.updateInfuraRPCMap();
+    this.updateCustomChains();
+
+    this.customChainUpdate.emit();
 
     void this.storageService.set('listedChains', chains);
+  }
+
+  private updateInfuraRPCMap(): void {
+    this.infuraRPCMap = new Map(
+      Array.from(this.listedChainMap.values())
+        .map((chain): [string, string] | undefined => {
+          const infuraRPC = chain.rpc?.find(
+            rpc =>
+              rpc.startsWith('https://') &&
+              rpc.includes(CHAIN_LIST_INFURA_KEY_TEMPLATE),
+          );
+
+          if (!infuraRPC) {
+            return undefined;
+          }
+
+          return [chain.id, infuraRPC];
+        })
+        .filter(
+          (entry): entry is Exclude<typeof entry, undefined> =>
+            entry !== undefined,
+        ),
+    );
   }
 
   static async create(storageService: StorageService): Promise<ChainService> {
@@ -241,8 +271,7 @@ export function useChainDisplayName(
   chainService: ChainService,
   chainId: string,
 ): string | undefined {
-  return useEventUpdateValue(
-    [chainService.chainListUpdate, chainService.customChainUpdate],
-    () => chainService.getChainDisplayName(chainId),
+  return useEventUpdateValue(chainService.customChainUpdate, () =>
+    chainService.getChainDisplayName(chainId),
   );
 }

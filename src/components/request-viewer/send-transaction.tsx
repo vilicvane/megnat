@@ -5,7 +5,7 @@ import {router} from 'expo-router';
 import {openBrowserAsync} from 'expo-web-browser';
 import {type ReactNode, useState} from 'react';
 import {Alert, ScrollView, View} from 'react-native';
-import {Appbar, IconButton, List, Text} from 'react-native-paper';
+import {Appbar, Button, IconButton, List, Text} from 'react-native-paper';
 
 import {MEGNAT_API_URL} from '../../constants/index.js';
 import type {Wallet, WalletDerivation} from '../../core/index.js';
@@ -164,36 +164,54 @@ export function SendTransaction({
           >
             Reject
           </AsyncButton>
-          <AsyncButton
-            mode="contained"
-            disabled={signDisabled}
-            buttonColor={theme.colors.primaryContainer}
-            style={{flex: 1, flexBasis: 0}}
-            handler={() =>
-              sign(
-                chainService,
-                walletKitService,
-                wallet!.wallet,
-                wallet!.derivation,
-                provider!,
-                request,
-                eip155ChainId,
-                {
-                  to,
-                  data,
-                  value: value ? toBigInt(value) : undefined,
-                  nonce: nonce ? parseInt(nonce) : undefined,
-                  gasLimit,
-                  gasPrice: feeData?.gasPrice ?? undefined,
-                  maxFeePerGas: feeData?.maxFeePerGas ?? undefined,
-                  maxPriorityFeePerGas:
-                    feeData?.maxPriorityFeePerGas ?? undefined,
-                },
-              )
-            }
-          >
-            Sign
-          </AsyncButton>
+          {provider ? (
+            <AsyncButton
+              mode="contained"
+              disabled={signDisabled}
+              buttonColor={theme.colors.primaryContainer}
+              style={{flex: 1, flexBasis: 0}}
+              handler={() =>
+                sign(
+                  chainService,
+                  walletKitService,
+                  wallet!.wallet,
+                  wallet!.derivation,
+                  provider!,
+                  request,
+                  eip155ChainId,
+                  {
+                    to,
+                    data,
+                    value: value ? toBigInt(value) : undefined,
+                    nonce: nonce ? parseInt(nonce) : undefined,
+                    gasLimit,
+                    gasPrice: feeData?.gasPrice ?? undefined,
+                    maxFeePerGas: feeData?.maxFeePerGas ?? undefined,
+                    maxPriorityFeePerGas:
+                      feeData?.maxPriorityFeePerGas ?? undefined,
+                  },
+                )
+              }
+            >
+              Sign
+            </AsyncButton>
+          ) : (
+            <Button
+              mode="contained"
+              buttonColor={theme.colors.primaryContainer}
+              style={{flex: 1, flexBasis: 0}}
+              onPress={() => {
+                router.push({
+                  pathname: '/edit-custom-chain',
+                  params: {
+                    addingChainId: chainId,
+                  },
+                });
+              }}
+            >
+              Add chain
+            </Button>
+          )}
         </View>
       </ScrollView>
     </>
@@ -239,20 +257,28 @@ async function sign(
 ): Promise<void> {
   const signer = new TangemSigner(provider, wallet.publicKey, walletDerivation);
 
-  const {hash} = await signer.sendTransaction({
-    chainId,
-    to,
-    data,
-    value,
-    nonce,
-    gasLimit,
-    gasPrice:
-      maxFeePerGas === undefined && maxPriorityFeePerGas === undefined
-        ? gasPrice
-        : undefined,
-    maxFeePerGas,
-    maxPriorityFeePerGas,
-  });
+  const {hash} = await signer
+    .sendTransaction({
+      chainId,
+      to,
+      data,
+      value,
+      nonce,
+      gasLimit,
+      gasPrice:
+        maxFeePerGas === undefined && maxPriorityFeePerGas === undefined
+          ? gasPrice
+          : undefined,
+      maxFeePerGas,
+      maxPriorityFeePerGas,
+    })
+    .catch(error => {
+      if ('error' in error) {
+        Alert.alert('Transaction error', error.error.message);
+      }
+
+      throw error;
+    });
 
   await walletKitService.completeSessionRequest(request, hash);
 

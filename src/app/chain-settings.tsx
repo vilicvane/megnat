@@ -83,7 +83,7 @@ function ChainItem({chain}: {chain: CustomChain}): ReactNode {
       onPress={() =>
         router.push({
           pathname: '/edit-custom-chain',
-          params: {id: chain.id},
+          params: {editingChainId: chain.id},
         })
       }
       right={({style}) => (

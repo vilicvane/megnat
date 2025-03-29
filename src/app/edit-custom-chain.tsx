@@ -1,9 +1,10 @@
 import {router, useLocalSearchParams} from 'expo-router';
 import {type ReactNode, useMemo, useState} from 'react';
 import {ScrollView, View} from 'react-native';
-import {Appbar, TextInput} from 'react-native-paper';
+import {Appbar, List, TextInput} from 'react-native-paper';
 
 import {AsyncButton} from '../components/ui/index.js';
+import {CHAIN_LIST_INFURA_KEY_TEMPLATE} from '../constants/index.js';
 import {useEntrances} from '../entrances.js';
 import type {ChainService} from '../services/index.js';
 import {useTheme} from '../theme.js';
@@ -13,25 +14,28 @@ const RPC_PROTOCOL_PATTERN = /^https?:$/;
 export default function EditCustomChainScreen(): ReactNode {
   const theme = useTheme();
 
-  const {id} = useLocalSearchParams<{id?: string}>();
+  const {editingChainId, addingChainId} = useLocalSearchParams<{
+    editingChainId?: string;
+    addingChainId?: string;
+  }>();
 
   const {chainService} = useEntrances();
 
   const [chain] = useState(() => {
-    if (!id) {
+    if (!editingChainId) {
       return undefined;
     }
 
-    return chainService.getCustomChain(id);
+    return chainService.getCustomChain(editingChainId);
   });
 
   const [name, setName] = useState(chain?.name ?? '');
   const [rpcURL, setRpcURL] = useState(chain?.rpc ?? '');
-  const [chainId, setChainId] = useState(chain?.id ?? '');
+  const [chainId, setChainId] = useState(chain?.id ?? addingChainId ?? '');
 
   const rpcURLValid = useMemo(() => {
     try {
-      return RPC_PROTOCOL_PATTERN.test(new URL(rpcURL.trim()).protocol);
+      return RPC_PROTOCOL_PATTERN.test(new URL(rpcURL).protocol);
     } catch {
       return false;
     }
@@ -42,7 +46,21 @@ export default function EditCustomChainScreen(): ReactNode {
     [chainId],
   );
 
+  let eip155ChainId: string | undefined;
+
+  if (chainIdValid) {
+    if (chainId.includes(':')) {
+      eip155ChainId = chainId;
+    } else {
+      eip155ChainId = eip155ChainIdToString(BigInt(chainId));
+    }
+  }
+
   const valid = rpcURLValid && chainIdValid;
+
+  const listedRpcURLs = eip155ChainId
+    ? chainService.getChainListedRPC(eip155ChainId)
+    : [];
 
   return (
     <>
@@ -56,17 +74,21 @@ export default function EditCustomChainScreen(): ReactNode {
         <View style={{margin: 16, gap: 16}}>
           <TextInput
             mode="outlined"
-            label="Name"
-            placeholder="Optional"
-            value={name}
-            onChangeText={setName}
-          />
-          <TextInput
-            mode="outlined"
             label="Chain ID"
             value={chainId}
             error={chainId !== '' && !chainIdValid}
             onChangeText={setChainId}
+          />
+          <TextInput
+            mode="outlined"
+            label="Name"
+            placeholder={
+              (eip155ChainId &&
+                chainService.getChainDisplayName(eip155ChainId)) ||
+              'Optional'
+            }
+            value={name}
+            onChangeText={setName}
           />
           <TextInput
             mode="outlined"
@@ -76,13 +98,42 @@ export default function EditCustomChainScreen(): ReactNode {
             onChangeText={setRpcURL}
           />
         </View>
+        {listedRpcURLs.length > 0 && (
+          <List.Accordion
+            left={({style}) => (
+              <List.Icon
+                icon="web"
+                color={theme.colors.listIcon}
+                style={style}
+              />
+            )}
+            title="Listed RPC URLs"
+          >
+            {listedRpcURLs.map(url => (
+              <List.Item
+                key={url}
+                title={url}
+                onPress={() => {
+                  if (url.includes(CHAIN_LIST_INFURA_KEY_TEMPLATE)) {
+                    router.replace('/chain-settings');
+                    return;
+                  }
+
+                  setRpcURL(url);
+                }}
+              />
+            ))}
+          </List.Accordion>
+        )}
       </ScrollView>
       <View style={{margin: 16}}>
         <AsyncButton
           mode="contained"
           disabled={!valid}
           buttonColor={theme.colors.primaryContainer}
-          handler={() => save(chainService, {id: chainId, name, rpc: rpcURL})}
+          handler={() =>
+            save(chainService, {id: eip155ChainId!, name, rpc: rpcURL})
+          }
         >
           Save
         </AsyncButton>
@@ -95,15 +146,6 @@ async function save(
   chainService: ChainService,
   {id, name, rpc}: {id: string; name: string; rpc: string},
 ): Promise<void> {
-  id = id.trim();
-
-  if (!id.includes(':')) {
-    id = eip155ChainIdToString(BigInt(id));
-  }
-
-  name = name.trim();
-  rpc = rpc.trim();
-
   const chain = {
     id,
     name: name || undefined,

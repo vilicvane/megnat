@@ -14,3 +14,5 @@ export function RPC_METHOD_DISPLAY_NAME(method: string): string {
       return method;
   }
 }
+
+export const CHAIN_LIST_INFURA_KEY_TEMPLATE = '${INFURA_API_KEY}';

@@ -10,4 +10,5 @@ export type ListedChain = {
   id: string;
   name: string;
   explorer: string | undefined;
+  rpc: string[] | undefined;
 };

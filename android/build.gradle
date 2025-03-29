@@ -42,8 +42,8 @@ allprojects {
             name "GitHubPackages"
             url uri("https://maven.pkg.github.com/tangem/tangem-sdk-android")
             credentials {
-                username = System.getenv("GITHUB_ACTOR") ?: project.findProperty("gpr.user")
-                password = System.getenv("GITHUB_TOKEN") ?: project.findProperty("gpr.token")
+                username = System.getenv("GITHUB_ACTOR") ?: System.getenv("GITHUB_USERNAME")
+                password = System.getenv("GITHUB_TOKEN")
             }
         }
     }
