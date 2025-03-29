@@ -130,10 +130,17 @@ export function SendTransaction({
       <ScrollView contentContainerStyle={{flexGrow: 1}}>
         <List.Section>
           <List.Item title="Chain" description={chainName} />
-          <List.Item title="From" description={from} />
+          <List.Item
+            title="From"
+            description={from}
+            descriptionNumberOfLines={1}
+            descriptionEllipsizeMode="middle"
+          />
           <List.Item
             title="To"
             description={to}
+            descriptionNumberOfLines={1}
+            descriptionEllipsizeMode="middle"
             descriptionStyle={{textDecorationLine: 'underline'}}
             onPress={() =>
               openBrowserAsync(chainService.getAddressURL(chainId, to))

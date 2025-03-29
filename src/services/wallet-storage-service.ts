@@ -1,8 +1,7 @@
 import {ethers} from 'ethers';
-import {useEffect} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 
 import type {Wallet, WalletDerivation} from '../core/index.js';
-import {useRefresh} from '../hooks/index.js';
 
 import type {StorageService} from './storage-service.js';
 
@@ -160,9 +159,28 @@ export class WalletStorageService {
 }
 
 export function useWallets(service: WalletStorageService): Wallet[] {
-  const refresh = useRefresh();
+  const [wallets, setWallets] = useState(() => service.getWallets());
 
-  useEffect(() => service.onUpdate(refresh), [refresh, service]);
+  useEffect(
+    () => service.onUpdate(() => setWallets(service.getWallets())),
+    [service],
+  );
 
-  return service.getWallets();
+  return wallets;
+}
+
+export function useWalletAddressSet(
+  service: WalletStorageService,
+): Set<string> {
+  const wallets = useWallets(service);
+
+  return useMemo(
+    () =>
+      new Set(
+        wallets.flatMap(wallet =>
+          wallet.derivations.map(derivation => derivation.address),
+        ),
+      ),
+    [wallets],
+  );
 }

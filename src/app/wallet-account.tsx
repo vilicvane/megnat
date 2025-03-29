@@ -51,6 +51,8 @@ export default function WalletAccountScreen(): ReactNode {
           <List.Item
             title="Address"
             description={address}
+            descriptionNumberOfLines={1}
+            descriptionEllipsizeMode="middle"
             titleNumberOfLines={0}
             onPress={() => void copy(address)}
           />

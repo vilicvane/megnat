@@ -69,7 +69,12 @@ export function SignTypedData({
       <ScrollView contentContainerStyle={{flexGrow: 1}}>
         <List.Section>
           <List.Item title="Chain" description={chainName} />
-          <List.Item title="Signer" description={address} />
+          <List.Item
+            title="Signer"
+            description={address}
+            descriptionNumberOfLines={1}
+            descriptionEllipsizeMode="middle"
+          />
           <List.Item title="Domain" description={data.domain.name} />
           <ListItemWithDescriptionBlock
             title="Message"
