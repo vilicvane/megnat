@@ -334,6 +334,7 @@ export function TransactionDataListItem({
           icon: 'check-decagram',
           color: theme.colors.primary,
           message: 'The signature is verified against contract source code.',
+          loading: false,
         };
       case false:
         return {
@@ -341,9 +342,15 @@ export function TransactionDataListItem({
           color: theme.colors.warning,
           message:
             'The data is decoded but could be disguised, make sure the contract is trusted.',
+          loading: false,
         };
       default:
-        return undefined;
+        return {
+          icon: 'check-decagram',
+          color: theme.colors.onSurfaceVariant,
+          message: undefined,
+          loading: true,
+        };
     }
   })();
 
@@ -360,21 +367,26 @@ export function TransactionDataListItem({
             }}
           >
             <Text style={{fontSize: 16}}>Data</Text>
-            {verifiedIcon && (
-              <IconButton
-                icon={verifiedIcon.icon}
-                iconColor={verifiedIcon.color}
-                size={20}
-                style={{
-                  margin: 0,
-                  marginRight: -8,
-                  height: 20,
-                }}
-                onPress={() =>
-                  Alert.alert('Signature verification', verifiedIcon.message)
-                }
-              />
-            )}
+            <IconButton
+              icon={verifiedIcon.icon}
+              iconColor={verifiedIcon.color}
+              size={20}
+              style={{
+                margin: 0,
+                marginRight: -8,
+                height: 20,
+              }}
+              loading={verifiedIcon.loading}
+              onPress={
+                verifiedIcon.message
+                  ? () =>
+                      Alert.alert(
+                        'Signature verification',
+                        verifiedIcon.message,
+                      )
+                  : undefined
+              }
+            />
           </View>
         }
         description={decoded}
