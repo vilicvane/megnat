@@ -11,8 +11,10 @@ export function AddressesListItem({
   titlePrefix,
   titleSuffix,
   onAddressPress,
+  checkWalletAddresses = true,
 }: {
   addresses: string[];
+  checkWalletAddresses?: boolean;
   titlePrefix?: string;
   titleSuffix?: string;
   onAddressPress?: (address: string) => void;
@@ -64,7 +66,7 @@ export function AddressesListItem({
                 {address}
               </Text>
             </View>
-            {addressSet.has(address) && (
+            {checkWalletAddresses && addressSet.has(address) && (
               <View
                 style={{
                   marginLeft: 2,

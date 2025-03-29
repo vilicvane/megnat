@@ -69,7 +69,10 @@ export default function SessionProposalScreen(): ReactNode {
               descriptionNumberOfLines={0}
             />
           )}
-          <AddressesListItem addresses={addresses} />
+          <AddressesListItem
+            addresses={addresses}
+            checkWalletAddresses={false}
+          />
         </List.Section>
       </ScrollView>
       <View
