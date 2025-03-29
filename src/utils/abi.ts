@@ -7,7 +7,7 @@ export function extractAddressesFromDecodedTransaction(
 ): string[] {
   signerAddress = ethers.getAddress(signerAddress);
 
-  const addresses: string[] = [];
+  const addressSet = new Set<string>();
 
   for (const [index, type] of fragment.inputs.entries()) {
     type.walk(args[index], (type, value) => {
@@ -23,9 +23,9 @@ export function extractAddressesFromDecodedTransaction(
         return;
       }
 
-      addresses.push(value);
+      addressSet.add(value);
     });
   }
 
-  return addresses;
+  return Array.from(addressSet);
 }
