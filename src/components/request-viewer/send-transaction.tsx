@@ -48,21 +48,23 @@ export function SendTransaction({
 
   const eip155ChainId = eip155ChainIdToBigInt(chainId);
 
-  const [
-    {from, to, data, value, nonce, gas: gasLimitHex, ...suggestedFeeData},
-  ] = params as [
-    {
-      from: string;
-      to: string;
-      data: string;
-      value?: string;
-      nonce?: string;
-      gas: string;
-      gasPrice?: string;
-      maxFeePerGas?: string;
-      maxPriorityFeePerGas?: string;
-    },
-  ];
+  let [{from, to, data, value, nonce, gas: gasLimitHex, ...suggestedFeeData}] =
+    params as [
+      {
+        from: string;
+        to: string;
+        data: string;
+        value?: string;
+        nonce?: string;
+        gas: string;
+        gasPrice?: string;
+        maxFeePerGas?: string;
+        maxPriorityFeePerGas?: string;
+      },
+    ];
+
+  from = ethers.getAddress(from);
+  to = ethers.getAddress(to);
 
   const wallet = walletStorageService.getWalletByAddress(from);
 
@@ -136,14 +138,11 @@ export function SendTransaction({
             descriptionNumberOfLines={1}
             descriptionEllipsizeMode="middle"
           />
-          <List.Item
+          <AddressesListItem
+            addresses={[to]}
             title="To"
-            description={to}
-            descriptionNumberOfLines={1}
-            descriptionEllipsizeMode="middle"
-            descriptionStyle={{textDecorationLine: 'underline'}}
-            onPress={() =>
-              openBrowserAsync(chainService.getAddressURL(chainId, to))
+            onAddressPress={address =>
+              openBrowserAsync(chainService.getAddressURL(chainId, address))
             }
           />
           {value && (

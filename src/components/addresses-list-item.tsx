@@ -8,13 +8,15 @@ import {useTheme} from '../theme.js';
 
 export function AddressesListItem({
   addresses,
+  checkWalletAddresses = true,
+  title,
   titlePrefix,
   titleSuffix,
   onAddressPress,
-  checkWalletAddresses = true,
 }: {
   addresses: string[];
   checkWalletAddresses?: boolean;
+  title?: string;
   titlePrefix?: string;
   titleSuffix?: string;
   onAddressPress?: (address: string) => void;
@@ -23,7 +25,7 @@ export function AddressesListItem({
 
   const {walletStorageService} = useEntrances();
 
-  const title =
+  title ??=
     (addresses.length > 1
       ? titlePrefix
         ? `${titlePrefix} addresses`
