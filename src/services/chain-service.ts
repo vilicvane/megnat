@@ -97,7 +97,11 @@ export class ChainService {
   }
 
   getChainListedRPC(chainId: string): string[] {
-    return this.listedChainMap.get(chainId)?.rpc ?? [];
+    return (
+      this.listedChainMap
+        .get(chainId)
+        ?.rpc?.filter(rpc => rpc.startsWith('https://')) ?? []
+    );
   }
 
   getTransactionURL(chainId: string, txHash: string): string {
