@@ -3,13 +3,15 @@ import {router} from 'expo-router';
 import {openBrowserAsync} from 'expo-web-browser';
 import type {ReactNode} from 'react';
 import {Image, Pressable, ScrollView, View} from 'react-native';
-import {Appbar, Button, Divider, List, Text} from 'react-native-paper';
+import {Appbar, Button, Divider, Icon, List, Text} from 'react-native-paper';
 
 import {
   MEGNAT_DONATE_URL,
+  MEGNAT_LATEST_RELEASE_URL,
   MEGNAT_REFERRAL_URL,
   MEGNAT_URL,
 } from '../constants/index.js';
+import {useAsyncValue} from '../hooks/index.js';
 import {useTheme} from '../theme.js';
 
 export default function AboutScreen(): ReactNode {
@@ -25,6 +27,39 @@ export default function AboutScreen(): ReactNode {
       sha: string;
     };
   };
+
+  const latest = useAsyncValue(async () => {
+    const response = await fetch(MEGNAT_LATEST_RELEASE_URL);
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch latest release');
+    }
+
+    const {tag_name, assets} = (await response.json()) as {
+      tag_name: string;
+      assets: {
+        content_type: string;
+        browser_download_url: string;
+      }[];
+    };
+
+    if (tag_name === `v${version}`) {
+      return undefined;
+    }
+
+    const downloadURL = assets.find(
+      asset => asset.content_type === 'application/vnd.android.package-archive',
+    )?.browser_download_url;
+
+    if (!downloadURL) {
+      return undefined;
+    }
+
+    return {
+      version: tag_name.replace(/^v/, ''),
+      downloadURL,
+    };
+  }, []);
 
   return (
     <>
@@ -88,7 +123,35 @@ export default function AboutScreen(): ReactNode {
         </View>
         <Divider />
         <List.Section>
-          <List.Item title="Version" description={`${version} (${sha})`} />
+          <List.Item
+            title="Version"
+            description={`${version} (${sha})`}
+            right={({style}) => {
+              return (
+                latest && (
+                  <View
+                    style={[
+                      style,
+                      {
+                        marginRight: -12,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                      },
+                    ]}
+                  >
+                    <Icon
+                      source="circle-medium"
+                      size={24}
+                      color={theme.colors.secondary}
+                    />
+                  </View>
+                )
+              );
+            }}
+            onPress={
+              latest && (() => void openBrowserAsync(latest.downloadURL))
+            }
+          />
           <List.Item
             title="Build Date"
             description={new Date(date).toLocaleString()}
