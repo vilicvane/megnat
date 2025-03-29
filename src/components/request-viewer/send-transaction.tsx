@@ -295,6 +295,8 @@ async function sign(
     .catch(error => {
       if ('error' in error) {
         Alert.alert('Transaction error', error.error.message);
+      } else if ('shortMessage' in error) {
+        Alert.alert('Transaction error', error.shortMessage);
       }
 
       throw error;
@@ -432,11 +434,9 @@ async function decodeTransactionData(
   address: string,
   data: string,
   provider: ethers.JsonRpcProvider | undefined,
-): Promise<
-  [decoded: string, addresses: string[], verified: boolean] | undefined
-> {
+): Promise<[decoded: string, addresses: string[], verified: boolean]> {
   if (data.length < SIGNATURE_HASH_BYTE_LIKE_LENGTH) {
-    return undefined;
+    return [data, [], false];
   }
 
   let decoded = await decodeBySourceCode(address, data);
@@ -458,7 +458,7 @@ async function decodeTransactionData(
   }
 
   if (!decoded) {
-    return undefined;
+    return [data, [], false];
   }
 
   const decodedData =
