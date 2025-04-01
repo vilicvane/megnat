@@ -6,7 +6,7 @@ import type {Wallet} from './core/index.js';
 export const tangem = NativeModules.TangemModule as TangemModule;
 
 export type TangemModule = {
-  scan(): Promise<TangemScanResponse>;
+  scan(): Promise<TangemCardResponse>;
   createWallet(options: {
     curve?: string;
     privateKey?: string;
@@ -18,17 +18,29 @@ export type TangemModule = {
   }): Promise<TangemDeriveWalletResponse>;
   setAccessCode(options: {cardId: string; accessCode?: string}): Promise<{}>;
   purgeWallet(options: {cardId: string; walletPublicKey: string}): Promise<{}>;
-  purgeAllWallets(options: {cardId: string}): Promise<{}>;
+  resetToFactorySettings(options: {cardId: string}): Promise<{}>;
   sign(options: {
     walletPublicKey: string;
     hashes: string[];
     derivationPath?: string;
   }): Promise<TangemSignResponse>;
+  readPrimaryCardToBackup(options: {cardId: string}): Promise<{}>;
+  addBackupCard(): Promise<TangemCardResponse>;
+  setAccessCodeForBackup(options: {}): Promise<{}>;
+  proceedBackup(): Promise<{}>;
 };
 
-export type TangemScanResponse = {
+export type TangemCardResponse = {
   cardId: string;
   wallets: TangemWallet[];
+  backupStatus:
+    | {
+        status: 'active' | 'cardLinked';
+        cardsCount: string;
+      }
+    | {
+        status: 'noBackup';
+      };
   firmwareVersion: {
     stringValue: string;
   };
@@ -52,6 +64,14 @@ export type TangemDeriveWalletResponse = {
 
 export type TangemSignResponse = {
   signatures: string[];
+};
+
+export type TangemResetBackupResponse = {
+  isDefaultPasscode: boolean;
+  settingsMask: string[];
+  backupStatus: 'NoBackup' | 'CardLinked' | 'Active';
+  isDefaultAccessCode: boolean;
+  cardId: string;
 };
 
 export type TangemWallet = {

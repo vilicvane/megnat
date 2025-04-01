@@ -60,10 +60,12 @@ import com.tangem.crypto.hdWallet.DerivationPath
 import com.tangem.crypto.hdWallet.bip32.ExtendedPrivateKey
 import com.tangem.crypto.hdWallet.masterkey.AnyMasterKeyFactory
 import com.tangem.operations.attestation.AttestationTask
+import com.tangem.operations.backup.BackupService
 import com.tangem.operations.derivation.DeriveWalletPublicKeyTask
 import com.tangem.operations.wallet.CreateWalletTask
 import com.tangem.sdk.DefaultSessionViewDelegate
 import com.tangem.sdk.extensions.getWordlist
+import com.tangem.sdk.extensions.init
 import com.tangem.sdk.extensions.initAuthenticationManager
 import com.tangem.sdk.extensions.initKeystoreManager
 import com.tangem.sdk.extensions.initNfcManager
@@ -80,6 +82,7 @@ class TangemModule(val reactContext: ReactApplicationContext): ReactContextBaseJ
     LifecycleEventListener {
     private var nfcManager = WeakReference<NfcManager?>(null)
     private var sdk = WeakReference<TangemSdk?>(null)
+    private var backupService: BackupService? = null
 
     private val handler = Handler(Looper.getMainLooper())
     private val converter = MoshiJsonConverter.INSTANCE
@@ -145,7 +148,28 @@ class TangemModule(val reactContext: ReactApplicationContext): ReactContextBaseJ
     }
 
     private fun requireSdk(): TangemSdk {
-        return getSdk() ?: throw Exception("SDK is not initialized")
+        return getSdk() ?: throw Exception("Unable to initialize Tangem SDK")
+    }
+
+    private fun getBackupService(reset: Boolean = false): BackupService? {
+        if (!reset) {
+            backupService?.let {
+                backupService -> return backupService
+            }
+        }
+
+        val sdk = getSdk() ?: return null
+        val activity = currentActivity ?: return null
+
+        val backupService = BackupService.init(sdk, activity as FragmentActivity)
+
+        this.backupService = backupService
+
+        return backupService
+    }
+
+    private fun requireBackupService(reset: Boolean = false): BackupService {
+        return getBackupService(reset) ?: throw Exception("Unable to initialize Tangem Backup Service")
     }
 
     override fun onHostResume() {
@@ -275,13 +299,13 @@ class TangemModule(val reactContext: ReactApplicationContext): ReactContextBaseJ
     }
 
     @ReactMethod
-    fun purgeAllWallets(optionMap: ReadableMap, promise: Promise) {
+    fun resetToFactorySettings(optionMap: ReadableMap, promise: Promise) {
         UiThreadUtil.runOnUiThread {
             try {
                 val options = OptionsParser(optionMap)
 
                 val runnable = ResetToFactorySettingsTask(
-                    toResetBackup = false,
+                    toResetBackup = true,
                     allowsRequestAccessCodeFromRepository = false
                 )
 
@@ -307,6 +331,61 @@ class TangemModule(val reactContext: ReactApplicationContext): ReactContextBaseJ
                     options.getCardId(),
                     options.getDerivationPath()
                 ) { handleResult(it, promise) }
+            } catch (ex: Exception) {
+                handleException(ex, promise)
+            }
+        }
+    }
+
+    @ReactMethod
+    fun readPrimaryCardToBackup(optionMap: ReadableMap, promise: Promise) {
+        UiThreadUtil.runOnUiThread {
+            try {
+                val options = OptionsParser(optionMap)
+                val backupService = requireBackupService(true)
+
+                backupService.readPrimaryCard(cardId = options.requireCardId()) {
+                    handleResult(it, promise)
+                }
+            } catch (ex: Exception) {
+                handleException(ex, promise)
+            }
+        }
+    }
+
+    @ReactMethod
+    fun addBackupCard(promise: Promise) {
+        UiThreadUtil.runOnUiThread {
+            try {
+                requireBackupService().addBackupCard { handleResult(it, promise) }
+            } catch (ex: Exception) {
+                handleException(ex, promise)
+            }
+        }
+    }
+
+    @ReactMethod
+    fun setAccessCodeForBackup(optionMap: ReadableMap, promise: Promise) {
+        UiThreadUtil.runOnUiThread {
+            try {
+                val options = OptionsParser(optionMap)
+
+                requireBackupService().setAccessCode(options.requireAccessCode())
+
+                handleResult(CompletionResult.Success(Unit), promise)
+            } catch (ex: Exception) {
+                handleException(ex, promise)
+            }
+        }
+    }
+
+    @ReactMethod
+    fun proceedBackup(promise: Promise) {
+        UiThreadUtil.runOnUiThread {
+            try {
+                val backupService = requireBackupService()
+
+                backupService.proceedBackup { handleResult(it, promise) }
             } catch (ex: Exception) {
                 handleException(ex, promise)
             }
@@ -369,6 +448,7 @@ class TangemModule(val reactContext: ReactApplicationContext): ReactContextBaseJ
             is Boolean, is Double, is Int, is String -> JSONObject().apply {
                 put("value", resp)
             }
+            is Unit -> JSONObject()
             else -> JSONObject(converter.toJson(resp))
         }
         return toWritableMap(jsonObject)
@@ -447,19 +527,11 @@ class OptionsParser(private val options: ReadableMap?) {
     }
 
     fun getAccessCode(): String? {
-        val accessCode = options?.getString("accessCode")
-        if (accessCode.isNullOrEmpty()) {
-            return null
-        }
-        return accessCode
+        return options?.getString("accessCode")
     }
 
-    fun getPasscode(): String? {
-        val passcode = options?.getString("passcode")
-        if (passcode.isNullOrEmpty()) {
-            return null
-        }
-        return passcode
+    fun requireAccessCode(): String {
+        return getAccessCode() ?: throw RequiredArgumentException("accessCode is required")
     }
 
     fun getCurveOrDefault(): EllipticCurve {
