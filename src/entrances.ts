@@ -29,6 +29,12 @@ export async function createEntrances({
   };
 }
 
+export const entrancesPromise = createEntrances({
+  walletKit: {
+    projectId: '00ce63cc0e5e65fcc7a50c8bd80c6403',
+  },
+});
+
 export const EntrancesContext = createContext<
   Awaited<ReturnType<typeof createEntrances>>
 >(undefined!);
