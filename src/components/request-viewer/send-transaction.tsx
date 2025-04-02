@@ -151,7 +151,8 @@ export function SendTransaction({
           {data && data !== '0x' && (
             <TransactionDataListItem
               chainId={chainId}
-              address={to}
+              from={from}
+              to={to}
               data={data}
               provider={provider}
             />
@@ -330,12 +331,14 @@ async function sign(
 
 export function TransactionDataListItem({
   chainId,
-  address,
+  from,
+  to,
   data,
   provider,
 }: {
   chainId: string;
-  address: string;
+  from: string;
+  to: string;
   data: string;
   provider: ethers.JsonRpcProvider | undefined;
 }): ReactNode {
@@ -344,7 +347,7 @@ export function TransactionDataListItem({
   const {chainService} = useEntrances();
 
   const [decoded, addresses, verified] = useAsyncValue(
-    () => decodeTransactionData(address, data, provider),
+    () => decodeTransactionData(from, to, data, provider),
     [data, provider],
   ) ?? [data, [], undefined];
 
@@ -430,7 +433,8 @@ export function TransactionDataListItem({
 const SIGNATURE_HASH_BYTE_LIKE_LENGTH = 10;
 
 async function decodeTransactionData(
-  address: string,
+  from: string,
+  to: string,
   data: string,
   provider: ethers.JsonRpcProvider | undefined,
 ): Promise<[decoded: string, addresses: string[], verified: boolean]> {
@@ -438,13 +442,13 @@ async function decodeTransactionData(
     return [data, [], false];
   }
 
-  let decoded = await decodeBySourceCode(address, data);
+  let decoded = await decodeBySourceCode(to, data);
   let verified = true;
 
   if (decoded === null) {
     // Could be a proxy.
 
-    const implAddress = await getImplementationAddress(address);
+    const implAddress = await getImplementationAddress(to);
 
     if (implAddress) {
       decoded = await decodeBySourceCode(implAddress, data);
@@ -476,7 +480,7 @@ async function decodeTransactionData(
       .replace(/^\[/, '(')
       .replace(/\]$/, ')');
 
-  const addresses = extractAddressesFromDecodedTransaction(decoded, address);
+  const addresses = extractAddressesFromDecodedTransaction(decoded, [from, to]);
 
   return [decodedData, addresses, verified];
 
@@ -543,7 +547,7 @@ async function decodeTransactionData(
   }
 
   async function getImplementationAddress(
-    address: string,
+    contractAddress: string,
   ): Promise<string | undefined> {
     if (!provider) {
       return undefined;
@@ -553,7 +557,7 @@ async function decodeTransactionData(
     const implSlot =
       '0x360894A13BA1A3210667C828492DB98DCA3E2076CC3735A920A3CA505D382BBC';
 
-    const impl = await provider.getStorage(address, implSlot);
+    const impl = await provider.getStorage(contractAddress, implSlot);
 
     const implAddress = `0x${impl.slice(-40)}`;
 

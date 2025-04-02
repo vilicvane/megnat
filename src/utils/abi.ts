@@ -2,10 +2,12 @@ import {ethers} from 'ethers';
 
 export function extractAddressesFromDecodedTransaction(
   {fragment, args}: ethers.TransactionDescription,
-  signerAddress: string,
+  transactionAddresses: string[],
   ignoreZeroAddress = true,
 ): string[] {
-  signerAddress = ethers.getAddress(signerAddress);
+  const transactionAddressSet = new Set(
+    transactionAddresses.map(address => ethers.getAddress(address)),
+  );
 
   const addressSet = new Set<string>();
 
@@ -19,7 +21,7 @@ export function extractAddressesFromDecodedTransaction(
         return;
       }
 
-      if (value === signerAddress) {
+      if (transactionAddressSet.has(value)) {
         return;
       }
 
