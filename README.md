@@ -26,10 +26,11 @@ It is created to unleash the full potential of Tangem cards and provide a possib
 ## Screenshots
 
 <p align="center">
-  <img src="./res/screenshots/transaction-data-verified.png" width="20%" alt="transaction-data-verified" />
-  <img src="./res/screenshots/transaction-data-unverified.png" width="20%" alt="transaction-data-unverified" />
-  <img src="./res/screenshots/malicious-app.png" width="20%" alt="malicious-app" />
-  <img src="./res/screenshots/session.png" width="20%" alt="session" />
+  <img src="./res/screenshots/wallets.png" width="18%" alt="wallets" />
+  <img src="./res/screenshots/transaction-data-verified.png" width="18%" alt="transaction-data-verified" />
+  <img src="./res/screenshots/transaction-data-unverified.png" width="18%" alt="transaction-data-unverified" />
+  <img src="./res/screenshots/malicious-app.png" width="18%" alt="malicious-app" />
+  <img src="./res/screenshots/session.png" width="18%" alt="session" />
 </p>
 
 ## Downloads
