@@ -1,5 +1,6 @@
 import {router, useLocalSearchParams} from 'expo-router';
 import {type ReactNode, useEffect, useState} from 'react';
+import type {StyleProp, ViewStyle} from 'react-native';
 import {Alert, ScrollView, View} from 'react-native';
 import {Appbar, Button, Icon, List, TextInput} from 'react-native-paper';
 
@@ -184,7 +185,7 @@ function StepSetAccessCode({
   const valid = accessCodeValid && confirmAccessCodeValid;
 
   return (
-    <Step status="active" title="Set access code">
+    <Step status="active" title="Set access code" style={{gap: 8}}>
       <TextInput
         mode="outlined"
         secureTextEntry
@@ -303,10 +304,12 @@ function StepFinalize({state}: {state: StepState}): ReactNode {
 function Step({
   status,
   title,
+  style,
   children,
 }: {
   status: 'pending' | 'active' | 'done';
   title: string;
+  style?: StyleProp<ViewStyle>;
   children?: ReactNode;
 }): ReactNode {
   const theme = useTheme();
@@ -350,12 +353,15 @@ function Step({
       right={() => null}
     >
       <View
-        style={{
-          paddingLeft: 48,
-          paddingRight: 16,
-          paddingBottom: 8,
-          gap: 8,
-        }}
+        style={[
+          {
+            paddingLeft: 48,
+            paddingRight: 16,
+            paddingBottom: 8,
+            gap: 10,
+          },
+          style,
+        ]}
       >
         {children}
       </View>

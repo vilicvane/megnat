@@ -237,7 +237,7 @@ export default function IndexScreen(): ReactNode {
         )}
       </ScrollView>
       {(pendingSessionRequests.length > 0 || wallets.length > 0) && (
-        <View style={{margin: 16, gap: 8}}>
+        <View style={{margin: 16, gap: 10}}>
           <View>
             {pendingSessionRequests.length > 0 && (
               <Button

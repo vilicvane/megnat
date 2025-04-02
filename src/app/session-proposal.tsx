@@ -80,7 +80,7 @@ export default function SessionProposalScreen(): ReactNode {
           margin: 16,
           marginTop: 'auto',
           flexDirection: 'row',
-          gap: 8,
+          gap: 10,
         }}
       >
         <AsyncButton

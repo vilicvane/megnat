@@ -103,7 +103,7 @@ export function SignMessage({session, request}: SignMessageProps): ReactNode {
             margin: 16,
             marginTop: 'auto',
             flexDirection: 'row',
-            gap: 8,
+            gap: 10,
           }}
         >
           <AsyncButton
