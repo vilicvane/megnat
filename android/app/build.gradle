@@ -93,6 +93,10 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode ((System.currentTimeMillis() / 1000 / 60).intValue())
         versionName (["node", "--print", "require('./package.json').version"].execute(null, file(projectRoot)).text.trim())
+        ndk {
+            //noinspection ChromeOsAbiSupport
+            abiFilters 'arm64-v8a'
+        }
     }
     signingConfigs {
         debug {
