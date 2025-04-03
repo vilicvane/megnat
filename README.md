@@ -37,6 +37,8 @@ It is created to unleash the full potential of Tangem cards and provide a possib
 
 You can find the latest version of the app on [GitHub Releases](https://github.com/vilicvane/megnat/releases/latest).
 
+> Packages are built directly using GitHub Actions from source code with signed build provenance [attestations](https://github.com/vilicvane/megnat/attestations) that can be verified by yourself.
+
 ## A signing app
 
 Megnat uses WalletConnect just like Tangem, but is solely built as a **signing app**, meaning built-in token management and DeFi features are non-goals.
