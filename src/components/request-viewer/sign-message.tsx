@@ -100,7 +100,7 @@ export function SignMessage({session, request}: SignMessageProps): ReactNode {
         </List.Section>
         <View
           style={{
-            margin: 16,
+            padding: 16,
             marginTop: 'auto',
             flexDirection: 'row',
             gap: 10,

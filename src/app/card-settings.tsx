@@ -118,7 +118,7 @@ export default function CardSettingsScreen(): ReactNode {
           </List.Section>
         )}
       </ScrollView>
-      <View style={{margin: 16, gap: 10}}>
+      <View style={{padding: 16, gap: 10}}>
         {card.backupStatus.status === 'active' && (
           <AsyncButton
             mode="contained"

@@ -122,7 +122,7 @@ export default function ConnectScreen(): ReactNode {
           })}
         </List.Section>
       </ScrollView>
-      <View style={{margin: 16}}>
+      <View style={{padding: 16}}>
         <AsyncButton
           mode="contained"
           disabled={!ableToConnect}

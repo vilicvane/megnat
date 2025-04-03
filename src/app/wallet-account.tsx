@@ -71,7 +71,7 @@ export default function WalletAccountScreen(): ReactNode {
           <SessionList sessions={sessions} address={address} />
         )}
       </ScrollView>
-      <View style={{margin: 16}}>
+      <View style={{padding: 16}}>
         <AsyncButton
           mode="contained"
           buttonColor={theme.colors.primaryContainer}

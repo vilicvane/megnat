@@ -98,7 +98,7 @@ export default function SessionAuthenticateScreen(): ReactNode {
         </List.Section>
         <View
           style={{
-            margin: 16,
+            padding: 16,
             marginTop: 'auto',
             flexDirection: 'row',
             gap: 10,
