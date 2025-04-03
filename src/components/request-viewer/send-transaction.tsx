@@ -1,5 +1,5 @@
 import type {PendingRequestTypes, SessionTypes} from '@walletconnect/types';
-import {ethers, formatEther, formatUnits, toBigInt} from 'ethers';
+import {ethers, formatEther, formatUnits, parseUnits, toBigInt} from 'ethers';
 import * as Clipboard from 'expo-clipboard';
 import {router} from 'expo-router';
 import {openBrowserAsync} from 'expo-web-browser';
@@ -24,7 +24,13 @@ import {
 } from '../../utils/index.js';
 import {AddressesListItem} from '../addresses-list-item.js';
 import {SessionVerification} from '../session-verification.js';
-import {AsyncButton, ListItemWithDescriptionBlock} from '../ui/index.js';
+import {
+  AsyncButton,
+  AsyncIconButton,
+  InputModal,
+  ListItemWithDescriptionBlock,
+  useInputModalProps,
+} from '../ui/index.js';
 
 export type SendTransactionProps = {
   session: SessionTypes.Struct;
@@ -72,41 +78,48 @@ export function SendTransaction({
 
   const [provider] = useState(() => chainService.getRPC(chainId));
 
-  const [feeData, _updateFeeData] = useAsyncValueUpdate(async update => {
-    if (!provider) {
-      return undefined;
-    }
-
-    if (!update) {
-      const {gasPrice, maxFeePerGas, maxPriorityFeePerGas} = suggestedFeeData;
-
-      if (gasPrice) {
-        return {
-          gasPrice: toBigInt(gasPrice),
-        };
+  const [feeData, updateFeeData, setFeeData] = useAsyncValueUpdate(
+    async update => {
+      if (!provider) {
+        return undefined;
       }
 
-      if (maxFeePerGas && maxPriorityFeePerGas) {
-        return {
-          maxFeePerGas: toBigInt(maxFeePerGas),
-          maxPriorityFeePerGas: toBigInt(maxPriorityFeePerGas),
-        };
-      }
-    }
+      if (!update) {
+        const {gasPrice, maxFeePerGas, maxPriorityFeePerGas} = suggestedFeeData;
 
-    return provider.getFeeData();
-  });
+        if (gasPrice) {
+          return {
+            gasPrice: toBigInt(gasPrice),
+          };
+        }
+
+        if (maxFeePerGas && maxPriorityFeePerGas) {
+          return {
+            maxFeePerGas: toBigInt(maxFeePerGas),
+            maxPriorityFeePerGas: toBigInt(maxPriorityFeePerGas),
+          };
+        }
+      }
+
+      return provider.getFeeData();
+    },
+  );
 
   const gasLimit = gasLimitHex ? toBigInt(gasLimitHex) : undefined;
   const gasLimitText = gasLimit?.toString();
 
   const maxFeePerGas = feeData?.maxFeePerGas ?? feeData?.gasPrice;
 
+  const maxFeePerGasText = maxFeePerGas
+    ? `${formatUnits(maxFeePerGas, 'gwei')} gwei`
+    : undefined;
+
   const maxGasText = maxFeePerGas
     ? gasLimit
-      ? `${formatEther(gasLimit * maxFeePerGas)} (${formatUnits(maxFeePerGas, 'gwei')} gwei)`
-      : `Unknown (${formatUnits(maxFeePerGas, 'gwei')} gwei)`
+      ? `${formatEther(gasLimit * maxFeePerGas)} (${maxFeePerGasText})`
+      : `Unknown (${maxFeePerGasText})`
     : 'Unknown';
+
   const estimatedGasFeeText =
     feeData?.gasPrice && feeData.gasPrice !== maxFeePerGas
       ? gasLimit
@@ -118,6 +131,8 @@ export function SendTransaction({
       : undefined;
 
   const signDisabled = !wallet || !provider || !feeData;
+
+  const [inputModalProps, openInputModal] = useInputModalProps();
 
   return (
     <>
@@ -160,7 +175,43 @@ export function SendTransaction({
           {gasLimitText && (
             <List.Item title="Gas limit" description={gasLimitText} />
           )}
-          <List.Item title="Max gas fee" description={maxGasText} />
+          <List.Item
+            title="Max gas fee"
+            description={maxGasText}
+            right={({style}) => (
+              <View
+                style={[
+                  style,
+                  {
+                    marginRight: -8,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  },
+                ]}
+              >
+                <AsyncIconButton
+                  icon="pencil"
+                  style={{margin: 0}}
+                  handler={() =>
+                    openInputModal().then(value => {
+                      if (!value) {
+                        return;
+                      }
+
+                      setFeeData({
+                        gasPrice: parseUnits(value, 'gwei'),
+                      });
+                    })
+                  }
+                />
+                <AsyncIconButton
+                  icon="refresh"
+                  style={{margin: 0}}
+                  handler={() => updateFeeData()}
+                />
+              </View>
+            )}
+          />
           {estimatedGasFeeText && (
             <List.Item
               title="Estimated gas fee"
@@ -170,7 +221,7 @@ export function SendTransaction({
         </List.Section>
         <View
           style={{
-            margin: 16,
+            padding: 16,
             marginTop: 'auto',
             flexDirection: 'row',
             gap: 10,
@@ -234,6 +285,7 @@ export function SendTransaction({
           )}
         </View>
       </ScrollView>
+      <InputModal placeholder={maxFeePerGasText} {...inputModalProps} />
     </>
   );
 }

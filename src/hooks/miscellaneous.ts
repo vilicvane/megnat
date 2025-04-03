@@ -43,16 +43,14 @@ export function useAsyncValue<T>(
 
 export function useAsyncValueUpdate<T>(
   callback: (update: boolean) => Promise<T>,
-): [T | undefined, () => void] {
+): [T | undefined, () => Promise<void>, (value: T) => void] {
   const [state, setState] = useState<T>();
 
-  const update = useEvent(() => {
-    void callback(true).then(setState);
-  });
+  const update = useEvent(() => callback(true).then(setState));
 
   useMountEffect(() => void callback(false).then(setState));
 
-  return [state, update];
+  return [state, update, setState];
 }
 
 export function useRefresh(): () => void {
