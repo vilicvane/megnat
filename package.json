@@ -1,6 +1,6 @@
 {
   "name": "megnat",
-  "version": "0.1.0-10",
+  "version": "0.1.0-11",
   "private": true,
   "main": "expo-router/entry",
   "repository": "https://github.com/vilicvane/megnat.git",
