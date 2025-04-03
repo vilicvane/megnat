@@ -198,8 +198,11 @@ export function SendTransaction({
                         return;
                       }
 
+                      const gasPrice = parseUnits(value, 'gwei');
+
                       setFeeData({
-                        gasPrice: parseUnits(value, 'gwei'),
+                        maxFeePerGas: gasPrice,
+                        maxPriorityFeePerGas: gasPrice,
                       });
                     })
                   }
