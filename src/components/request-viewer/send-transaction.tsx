@@ -332,30 +332,42 @@ async function sign(
 ): Promise<void> {
   const signer = new TangemSigner(provider, wallet.publicKey, walletDerivation);
 
-  const {hash} = await signer
-    .sendTransaction({
-      chainId,
-      to,
-      data,
-      value,
-      nonce,
-      gasLimit,
-      gasPrice:
-        maxFeePerGas === undefined && maxPriorityFeePerGas === undefined
-          ? gasPrice
-          : undefined,
-      maxFeePerGas,
-      maxPriorityFeePerGas,
-    })
-    .catch(error => {
-      if ('error' in error) {
-        Alert.alert('Transaction error', error.error.message);
-      } else if ('shortMessage' in error) {
-        Alert.alert('Transaction error', error.shortMessage);
-      }
+  const transaction = {
+    chainId,
+    to,
+    data,
+    value,
+    nonce,
+    gasLimit,
+    gasPrice:
+      maxFeePerGas === undefined && maxPriorityFeePerGas === undefined
+        ? gasPrice
+        : undefined,
+    maxFeePerGas,
+    maxPriorityFeePerGas,
+  };
 
-      throw error;
-    });
+  if (transaction.gasLimit === undefined) {
+    try {
+      transaction.gasLimit = await provider.estimateGas(transaction);
+    } catch {
+      transaction.gasLimit = await provider.estimateGas({
+        ...transaction,
+        ...(await provider.getFeeData()),
+        gasPrice: undefined,
+      });
+    }
+  }
+
+  const {hash} = await signer.sendTransaction(transaction).catch(error => {
+    if ('error' in error) {
+      Alert.alert('Transaction error', error.error.message);
+    } else if ('shortMessage' in error) {
+      Alert.alert('Transaction error', error.shortMessage);
+    }
+
+    throw error;
+  });
 
   await walletKitService.completeSessionRequest(request, hash);
 
