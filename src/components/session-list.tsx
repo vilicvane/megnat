@@ -34,10 +34,10 @@ export function SessionList({sessions, address}: SessionListProps): ReactNode {
   return (
     <List.Section title="Sessions">
       {sessions.map(session => {
-        const unsupported =
-          session.namespaces.eip155?.methods.some(
+        const unsupportedMethods =
+          session.namespaces.eip155?.methods.filter(
             method => !SUPPORTED_METHOD_SET.has(method),
-          ) ?? false;
+          ) ?? [];
 
         const wallets = new Set(
           session.namespaces.eip155?.accounts.map(account =>
@@ -58,7 +58,7 @@ export function SessionList({sessions, address}: SessionListProps): ReactNode {
             title={
               <View style={{flexDirection: 'row', alignItems: 'center'}}>
                 <Text>{getSessionDisplayName(session.peer.metadata)}</Text>
-                {unsupported && (
+                {unsupportedMethods.length > 0 && (
                   <IconButton
                     icon="alert-circle-outline"
                     iconColor={theme.colors.onSurfaceVariant}
@@ -71,7 +71,12 @@ export function SessionList({sessions, address}: SessionListProps): ReactNode {
                     onPress={() => {
                       Alert.alert(
                         'Unsupported methods',
-                        'This session requires some methods that are not supported by Megnat, thus may not work as expected.',
+                        `\
+This session requires some methods that are not supported by Megnat, thus may not work as expected.
+
+Unsupported methods:
+
+${unsupportedMethods.map(method => `• ${method}`).join('\n')}`,
                       );
                     }}
                   />
