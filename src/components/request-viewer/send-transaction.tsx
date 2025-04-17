@@ -21,6 +21,7 @@ import {useTheme} from '../../theme.js';
 import {
   eip155ChainIdToBigInt,
   extractAddressesFromDecodedTransaction,
+  isReactNativeError,
 } from '../../utils/index.js';
 import {AddressesListItem} from '../addresses-list-item.js';
 import {SessionVerification} from '../session-verification.js';
@@ -360,10 +361,18 @@ async function sign(
   }
 
   const {hash} = await signer.sendTransaction(transaction).catch(error => {
+    let message: string | undefined;
+
     if ('error' in error) {
-      Alert.alert('Transaction error', error.error.message);
+      message = error.error.message;
     } else if ('shortMessage' in error) {
-      Alert.alert('Transaction error', error.shortMessage);
+      message = error.shortMessage;
+    } else if (!isReactNativeError(error)) {
+      message = error.message ?? String(error);
+    }
+
+    if (message) {
+      Alert.alert('Transaction error', message);
     }
 
     throw error;
