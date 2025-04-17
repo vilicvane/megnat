@@ -14,6 +14,7 @@ import {useEntrances} from '../../entrances.js';
 import {
   type WalletKitService,
   useChainDisplayName,
+  useWalletByAddress,
 } from '../../services/index.js';
 import {useTheme} from '../../theme.js';
 import {extractAddressesFromMessage, isValidUTF8} from '../../utils/index.js';
@@ -57,7 +58,7 @@ export function SignMessage({session, request}: SignMessageProps): ReactNode {
 
   const otherAddresses = extractAddressesFromMessage(message, address);
 
-  const wallet = walletStorageService.getWalletByAddress(address);
+  const wallet = useWalletByAddress(walletStorageService, address);
 
   const chainName = useChainDisplayName(chainService, chainId);
 

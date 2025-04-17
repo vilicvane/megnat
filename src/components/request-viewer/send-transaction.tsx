@@ -3,19 +3,20 @@ import {ethers, formatEther, formatUnits, parseUnits, toBigInt} from 'ethers';
 import * as Clipboard from 'expo-clipboard';
 import {router} from 'expo-router';
 import {openBrowserAsync} from 'expo-web-browser';
-import {type ReactNode, useState} from 'react';
+import {type ReactNode, useEffect, useMemo, useState} from 'react';
 import {Alert, ScrollView, View} from 'react-native';
 import {Appbar, Button, IconButton, List, Text} from 'react-native-paper';
+import useEvent from 'react-use-event-hook';
 
 import {MEGNAT_API_URL} from '../../constants/index.js';
-import type {Wallet, WalletDerivation} from '../../core/index.js';
 import {TangemSigner} from '../../core/index.js';
 import {useEntrances} from '../../entrances.js';
-import {useAsyncValue, useAsyncValueUpdate} from '../../hooks/index.js';
+import {asyncEffect, useAsyncValue} from '../../hooks/index.js';
 import {
   type ChainService,
   type WalletKitService,
   useChainDisplayName,
+  useWalletByAddress,
 } from '../../services/index.js';
 import {useTheme} from '../../theme.js';
 import {
@@ -73,43 +74,129 @@ export function SendTransaction({
   from = ethers.getAddress(from);
   to = ethers.getAddress(to);
 
-  const wallet = walletStorageService.getWalletByAddress(from);
+  const wallet = useWalletByAddress(walletStorageService, from);
 
   const chainName = useChainDisplayName(chainService, chainId);
 
   const [provider] = useState(() => chainService.getRPC(chainId));
 
-  const [feeData, updateFeeData, setFeeData] = useAsyncValueUpdate(
-    async update => {
-      if (!provider) {
-        return undefined;
-      }
+  const signer = useMemo(() => {
+    if (!wallet) {
+      return undefined;
+    }
 
-      if (!update) {
-        const {gasPrice, maxFeePerGas, maxPriorityFeePerGas} = suggestedFeeData;
+    return new TangemSigner(
+      provider,
+      wallet.wallet.publicKey,
+      wallet.derivation,
+    );
+  }, [provider, wallet]);
 
-        if (gasPrice) {
-          return {
-            gasPrice: toBigInt(gasPrice),
-          };
-        }
+  const [transaction, setTransaction] = useState(
+    (): ethers.TransactionRequest & {
+      gasLimit?: bigint;
+      maxFeePerGas?: bigint;
+      maxPriorityFeePerGas?: bigint;
+      gasPrice?: bigint;
+    } => {
+      const {gasPrice, maxFeePerGas, maxPriorityFeePerGas} = suggestedFeeData;
 
-        if (maxFeePerGas && maxPriorityFeePerGas) {
-          return {
-            maxFeePerGas: toBigInt(maxFeePerGas),
-            maxPriorityFeePerGas: toBigInt(maxPriorityFeePerGas),
-          };
-        }
-      }
+      const eip1559 =
+        maxFeePerGas !== undefined && maxPriorityFeePerGas !== undefined;
 
-      return provider.getFeeData();
+      return {
+        chainId: eip155ChainId,
+        to,
+        data,
+        value,
+        nonce: nonce ? parseInt(nonce) : undefined,
+        gasLimit: gasLimitHex ? toBigInt(gasLimitHex) : undefined,
+        ...(eip1559
+          ? {
+              maxFeePerGas: toBigInt(maxFeePerGas),
+              maxPriorityFeePerGas: toBigInt(maxPriorityFeePerGas),
+              gasPrice: undefined,
+            }
+          : {
+              maxFeePerGas: undefined,
+              maxPriorityFeePerGas: undefined,
+              gasPrice: gasPrice ? toBigInt(gasPrice) : undefined,
+            }),
+      };
     },
   );
 
-  const gasLimit = gasLimitHex ? toBigInt(gasLimitHex) : undefined;
+  const [ready, setReady] = useState(false);
+
+  const updateFeeData = useEvent(async (signal?: AbortSignal) => {
+    if (!signer) {
+      return;
+    }
+
+    const feeData = await signer.provider!.getFeeData();
+
+    if (signal?.aborted) {
+      return;
+    }
+
+    const eip1559 =
+      feeData.maxFeePerGas != null && feeData.maxPriorityFeePerGas != null;
+
+    const filteredFeeData = eip1559
+      ? {
+          maxFeePerGas: feeData.maxFeePerGas,
+          maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
+        }
+      : {
+          gasPrice: feeData.gasPrice ?? undefined,
+        };
+
+    setTransaction(transaction => {
+      return {
+        ...transaction,
+        ...filteredFeeData,
+      };
+    });
+  });
+
+  useEffect(
+    () =>
+      asyncEffect(async ({signal}) => {
+        if (!signer) {
+          return;
+        }
+
+        const gasLimit = await signer.estimateGas(transaction);
+
+        if (signal.aborted) {
+          return;
+        }
+
+        setTransaction(transaction => {
+          return {
+            ...transaction,
+            gasLimit,
+          };
+        });
+
+        if (
+          transaction.maxFeePerGas === undefined &&
+          transaction.gasPrice === undefined
+        ) {
+          await updateFeeData(signal);
+        }
+
+        setReady(true);
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  const gasLimit = transaction.gasLimit ?? undefined;
   const gasLimitText = gasLimit?.toString();
 
-  const maxFeePerGas = feeData?.maxFeePerGas ?? feeData?.gasPrice;
+  const maxFeePerGas =
+    transaction.maxFeePerGas ?? transaction.gasPrice ?? undefined;
 
   const maxFeePerGasText = maxFeePerGas
     ? `${formatUnits(maxFeePerGas, 'gwei')} gwei`
@@ -122,16 +209,16 @@ export function SendTransaction({
     : 'Unknown';
 
   const estimatedGasFeeText =
-    feeData?.gasPrice && feeData.gasPrice !== maxFeePerGas
+    transaction.gasPrice && transaction.gasPrice !== maxFeePerGas
       ? gasLimit
-        ? `${formatEther(gasLimit * feeData.gasPrice)} (${formatUnits(
-            feeData.gasPrice,
+        ? `${formatEther(gasLimit * transaction.gasPrice)} (${formatUnits(
+            transaction.gasPrice,
             'gwei',
           )} gwei)`
-        : `Unknown (${formatUnits(feeData.gasPrice, 'gwei')} gwei)`
+        : `Unknown (${formatUnits(transaction.gasPrice, 'gwei')} gwei)`
       : undefined;
 
-  const signDisabled = !wallet || !provider || !feeData;
+  const signDisabled = !signer || !ready;
 
   const [inputModalProps, openInputModal] = useInputModalProps();
 
@@ -201,9 +288,12 @@ export function SendTransaction({
 
                       const gasPrice = parseUnits(value, 'gwei');
 
-                      setFeeData({
-                        maxFeePerGas: gasPrice,
-                        maxPriorityFeePerGas: gasPrice,
+                      setTransaction(transaction => {
+                        return {
+                          ...transaction,
+                          maxFeePerGas: gasPrice,
+                          maxPriorityFeePerGas: gasPrice,
+                        };
                       });
                     })
                   }
@@ -249,22 +339,9 @@ export function SendTransaction({
                 sign(
                   chainService,
                   walletKitService,
-                  wallet!.wallet,
-                  wallet!.derivation,
-                  provider!,
+                  signer!,
                   request,
-                  eip155ChainId,
-                  {
-                    to,
-                    data,
-                    value: value ? toBigInt(value) : undefined,
-                    nonce: nonce ? parseInt(nonce) : undefined,
-                    gasLimit,
-                    gasPrice: feeData?.gasPrice ?? undefined,
-                    maxFeePerGas: feeData?.maxFeePerGas ?? undefined,
-                    maxPriorityFeePerGas:
-                      feeData?.maxPriorityFeePerGas ?? undefined,
-                  },
+                  transaction,
                 )
               }
             >
@@ -306,77 +383,13 @@ async function reject(
 async function sign(
   chainService: ChainService,
   walletKitService: WalletKitService,
-  wallet: Wallet,
-  walletDerivation: WalletDerivation,
-  provider: ethers.JsonRpcProvider,
+  signer: TangemSigner,
   request: PendingRequestTypes.Struct,
-  chainId: bigint,
-  {
-    to,
-    data,
-    value,
-    nonce,
-    gasLimit,
-    gasPrice,
-    maxFeePerGas,
-    maxPriorityFeePerGas,
-  }: {
-    to: string;
-    data: string;
-    value: bigint | undefined;
-    nonce: number | undefined;
-    gasLimit: bigint | undefined;
-    gasPrice: bigint | undefined;
-    maxFeePerGas: bigint | undefined;
-    maxPriorityFeePerGas: bigint | undefined;
-  },
+  transaction: ethers.TransactionRequest,
 ): Promise<void> {
-  const signer = new TangemSigner(provider, wallet.publicKey, walletDerivation);
-
-  const transaction = {
-    chainId,
-    to,
-    data,
-    value,
-    nonce,
-    gasLimit,
-    gasPrice:
-      maxFeePerGas === undefined && maxPriorityFeePerGas === undefined
-        ? gasPrice
-        : undefined,
-    maxFeePerGas,
-    maxPriorityFeePerGas,
-  };
-
-  if (transaction.gasLimit === undefined) {
-    try {
-      transaction.gasLimit = await provider.estimateGas(transaction);
-    } catch {
-      transaction.gasLimit = await provider.estimateGas({
-        ...transaction,
-        ...(await provider.getFeeData()),
-        gasPrice: undefined,
-      });
-    }
-  }
-
-  const {hash} = await signer.sendTransaction(transaction).catch(error => {
-    let message: string | undefined;
-
-    if ('error' in error) {
-      message = error.error.message;
-    } else if ('shortMessage' in error) {
-      message = error.shortMessage;
-    } else if (!isReactNativeError(error)) {
-      message = error.message ?? String(error);
-    }
-
-    if (message) {
-      Alert.alert('Transaction error', message);
-    }
-
-    throw error;
-  });
+  const {hash} = await signer
+    .sendTransaction(transaction)
+    .catch(tapTransactionError);
 
   await walletKitService.completeSessionRequest(request, hash);
 
@@ -403,6 +416,24 @@ async function sign(
   );
 
   router.back();
+}
+
+function tapTransactionError(error: any): never {
+  let message: string | undefined;
+
+  if ('error' in error) {
+    message = error.error.message;
+  } else if ('shortMessage' in error) {
+    message = error.shortMessage;
+  } else if (!isReactNativeError(error)) {
+    message = error.message ?? String(error);
+  }
+
+  if (message) {
+    Alert.alert('Transaction error', message);
+  }
+
+  throw error;
 }
 
 export function TransactionDataListItem({

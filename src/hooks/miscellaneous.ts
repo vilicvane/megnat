@@ -108,3 +108,21 @@ export function useEventUpdateValue<T, TEventData>(
 
   return value;
 }
+
+export function asyncEffect(
+  callback: (options: {signal: AbortSignal}) => Promise<void>,
+): () => void {
+  const controller = new AbortController();
+
+  void callback({
+    signal: controller.signal,
+  }).catch(error => {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return;
+    }
+
+    throw error;
+  });
+
+  return () => controller.abort();
+}

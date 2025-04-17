@@ -12,6 +12,7 @@ import {useEntrances} from '../../entrances.js';
 import {
   type WalletKitService,
   useChainDisplayName,
+  useWalletByAddress,
 } from '../../services/index.js';
 import {useTheme} from '../../theme.js';
 import {extractAddressesFromMessage} from '../../utils/index.js';
@@ -50,7 +51,7 @@ export function SignTypedData({
     address,
   );
 
-  const wallet = walletStorageService.getWalletByAddress(address);
+  const wallet = useWalletByAddress(walletStorageService, address);
 
   const chainName = useChainDisplayName(chainService, chainId);
 
