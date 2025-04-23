@@ -29,7 +29,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: cd android && ./gradlew assembleRelease
+        run: cd android && ./gradlew assembleRelease && ./gradlew bundleRelease
       - run: mv android/app/build/outputs/apk/release/app-release.apk ${{ env.APK_NAME }}
       - run: mv android/app/build/outputs/bundle/release/app-release.aab ${{ env.AAB_NAME }}
       - uses: actions/attest-build-provenance@v2
