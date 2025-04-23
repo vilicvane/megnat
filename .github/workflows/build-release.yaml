@@ -9,7 +9,8 @@ permissions:
   id-token: write
   attestations: write
 env:
-  ARTIFACT_NAME: megnat-${{ github.ref_name }}.apk
+  APK_NAME: megnat-${{ github.ref_name }}.apk
+  AAB_NAME: megnat-${{ github.ref_name }}.aab
 jobs:
   build-android:
     runs-on: ubuntu-latest
@@ -28,13 +29,18 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: cd android && ./gradlew clean assembleRelease
-      - run: mv android/app/build/outputs/apk/release/app-release.apk ${{ env.ARTIFACT_NAME }}
+        run: cd android && ./gradlew assembleRelease
+      - run: mv android/app/build/outputs/apk/release/app-release.apk ${{ env.APK_NAME }}
+      - run: mv android/app/build/outputs/bundle/release/app-release.aab ${{ env.AAB_NAME }}
       - uses: actions/attest-build-provenance@v2
         with:
-          subject-path: ${{ env.ARTIFACT_NAME }}
+          subject-path: |
+            ${{ env.APK_NAME }}
+            ${{ env.AAB_NAME }}
       - uses: softprops/action-gh-release@v2
         with:
           name: Release ${{ github.ref_name }}
           prerelease: ${{ contains(github.ref_name, '-') }}
-          files: ${{ env.ARTIFACT_NAME }}
+          files: |
+            ${{ env.APK_NAME }}
+            ${{ env.AAB_NAME }}
