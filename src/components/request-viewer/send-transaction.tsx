@@ -5,6 +5,7 @@ import {router} from 'expo-router';
 import {openBrowserAsync} from 'expo-web-browser';
 import {type ReactNode, useEffect, useMemo, useState} from 'react';
 import {Alert, ScrollView, View} from 'react-native';
+import type {ListItemProps} from 'react-native-paper';
 import {Appbar, Button, IconButton, List, Text} from 'react-native-paper';
 import useEvent from 'react-use-event-hook';
 
@@ -20,9 +21,11 @@ import {
 } from '../../services/index.js';
 import {useTheme} from '../../theme.js';
 import {
+  bigintMin,
   eip155ChainIdToBigInt,
   extractAddressesFromDecodedTransaction,
   isReactNativeError,
+  toMaxSignificant,
 } from '../../utils/index.js';
 import {AddressesListItem} from '../addresses-list-item.js';
 import {SessionVerification} from '../session-verification.js';
@@ -33,6 +36,8 @@ import {
   ListItemWithDescriptionBlock,
   useInputModalProps,
 } from '../ui/index.js';
+
+const MAX_GAS_SIGNIFICANT_DIGITS = 4;
 
 export type SendTransactionProps = {
   session: SessionTypes.Struct;
@@ -126,18 +131,16 @@ export function SendTransaction({
     },
   );
 
+  const [latestBaseFeePerGas, setLatestBaseFeePerGas] = useState<bigint>();
+
   const [ready, setReady] = useState(false);
 
-  const updateFeeData = useEvent(async (signal?: AbortSignal) => {
+  const updateFeeData = useEvent(async () => {
     if (!signer) {
       return;
     }
 
     const feeData = await signer.provider!.getFeeData();
-
-    if (signal?.aborted) {
-      return;
-    }
 
     const eip1559 =
       feeData.maxFeePerGas != null && feeData.maxPriorityFeePerGas != null;
@@ -146,8 +149,11 @@ export function SendTransaction({
       ? {
           maxFeePerGas: feeData.maxFeePerGas,
           maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
+          gasPrice: undefined,
         }
       : {
+          maxFeePerGas: undefined,
+          maxPriorityFeePerGas: undefined,
           gasPrice: feeData.gasPrice ?? undefined,
         };
 
@@ -159,6 +165,18 @@ export function SendTransaction({
     });
   });
 
+  const updateLatestBaseFeePerGas = useEvent(async () => {
+    if (!signer) {
+      return;
+    }
+
+    const block = await signer.provider!.getBlock('latest');
+
+    if (block) {
+      setLatestBaseFeePerGas(block.baseFeePerGas ?? undefined);
+    }
+  });
+
   useEffect(
     () =>
       asyncEffect(async ({signal}) => {
@@ -166,25 +184,27 @@ export function SendTransaction({
           return;
         }
 
-        const gasLimit = await signer.estimateGas(transaction);
+        if (transaction.gasLimit === undefined) {
+          const gasLimit = await signer.estimateGas(transaction);
 
-        if (signal.aborted) {
-          return;
+          if (signal.aborted) {
+            return;
+          }
+
+          setTransaction(transaction => {
+            return {
+              ...transaction,
+              gasLimit,
+            };
+          });
         }
 
-        setTransaction(transaction => {
-          return {
-            ...transaction,
-            gasLimit,
-          };
-        });
-
-        if (
+        await Promise.all([
           transaction.maxFeePerGas === undefined &&
-          transaction.gasPrice === undefined
-        ) {
-          await updateFeeData(signal);
-        }
+            transaction.gasPrice === undefined &&
+            updateFeeData(),
+          transaction.gasPrice === undefined && updateLatestBaseFeePerGas(),
+        ]);
 
         setReady(true);
       }),
@@ -195,32 +215,92 @@ export function SendTransaction({
   const gasLimit = transaction.gasLimit ?? undefined;
   const gasLimitText = gasLimit?.toString();
 
-  const maxFeePerGas =
-    transaction.maxFeePerGas ?? transaction.gasPrice ?? undefined;
+  const maxFeePerGasText =
+    transaction.maxFeePerGas !== undefined
+      ? `${formatUnits(toMaxSignificant(transaction.maxFeePerGas, MAX_GAS_SIGNIFICANT_DIGITS), 'gwei')} gwei`
+      : undefined;
 
-  const maxFeePerGasText = maxFeePerGas
-    ? `${formatUnits(maxFeePerGas, 'gwei')} gwei`
-    : undefined;
+  const maxGasFeeText =
+    transaction.maxFeePerGas !== undefined
+      ? gasLimit
+        ? `${formatEther(toMaxSignificant(gasLimit * transaction.maxFeePerGas, MAX_GAS_SIGNIFICANT_DIGITS))} (${maxFeePerGasText})`
+        : `Unknown (${maxFeePerGasText})`
+      : undefined;
 
-  const maxGasText = maxFeePerGas
-    ? gasLimit
-      ? `${formatEther(gasLimit * maxFeePerGas)} (${maxFeePerGasText})`
-      : `Unknown (${maxFeePerGasText})`
-    : 'Unknown';
+  const estimatedFeePerGas =
+    transaction.maxFeePerGas !== undefined &&
+    transaction.maxPriorityFeePerGas !== undefined &&
+    latestBaseFeePerGas !== undefined
+      ? bigintMin(
+          transaction.maxFeePerGas,
+          latestBaseFeePerGas + transaction.maxPriorityFeePerGas,
+        )
+      : undefined;
 
   const estimatedGasFeeText =
-    transaction.gasPrice && transaction.gasPrice !== maxFeePerGas
+    estimatedFeePerGas !== undefined
       ? gasLimit
-        ? `${formatEther(gasLimit * transaction.gasPrice)} (${formatUnits(
-            transaction.gasPrice,
-            'gwei',
-          )} gwei)`
-        : `Unknown (${formatUnits(transaction.gasPrice, 'gwei')} gwei)`
+        ? `${formatEther(toMaxSignificant(gasLimit * estimatedFeePerGas, MAX_GAS_SIGNIFICANT_DIGITS))} (${formatUnits(toMaxSignificant(estimatedFeePerGas, MAX_GAS_SIGNIFICANT_DIGITS), 'gwei')} gwei)`
+        : `Unknown (${formatUnits(toMaxSignificant(estimatedFeePerGas, MAX_GAS_SIGNIFICANT_DIGITS), 'gwei')} gwei)`
+      : undefined;
+
+  const legacyGasPriceText =
+    transaction.gasPrice !== undefined
+      ? `${formatUnits(toMaxSignificant(transaction.gasPrice, MAX_GAS_SIGNIFICANT_DIGITS), 'gwei')} gwei`
+      : undefined;
+
+  const legacyGasFeeText =
+    transaction.gasPrice !== undefined
+      ? gasLimit
+        ? `${formatEther(toMaxSignificant(gasLimit * transaction.gasPrice, MAX_GAS_SIGNIFICANT_DIGITS))} (${legacyGasPriceText})`
+        : `Unknown (${legacyGasPriceText})`
       : undefined;
 
   const signDisabled = !signer || !ready;
 
   const [inputModalProps, openInputModal] = useInputModalProps();
+
+  const editFeeListItemRight: ListItemProps['right'] = ({style}) => (
+    <View
+      style={[
+        style,
+        {
+          marginRight: -8,
+          flexDirection: 'row',
+          alignItems: 'center',
+        },
+      ]}
+    >
+      <AsyncIconButton
+        icon="pencil"
+        style={{margin: 0}}
+        handler={() =>
+          openInputModal().then(value => {
+            if (!value) {
+              return;
+            }
+
+            const gasPrice = parseUnits(value, 'gwei');
+
+            setTransaction(transaction => {
+              return {
+                ...transaction,
+                maxFeePerGas: gasPrice,
+                maxPriorityFeePerGas: gasPrice,
+              };
+            });
+          })
+        }
+      />
+      <AsyncIconButton
+        icon="refresh"
+        style={{margin: 0}}
+        handler={async () => {
+          await Promise.all([updateFeeData(), updateLatestBaseFeePerGas()]);
+        }}
+      />
+    </View>
+  );
 
   return (
     <>
@@ -263,53 +343,24 @@ export function SendTransaction({
           {gasLimitText && (
             <List.Item title="Gas limit" description={gasLimitText} />
           )}
-          <List.Item
-            title="Max gas fee"
-            description={maxGasText}
-            right={({style}) => (
-              <View
-                style={[
-                  style,
-                  {
-                    marginRight: -8,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                  },
-                ]}
-              >
-                <AsyncIconButton
-                  icon="pencil"
-                  style={{margin: 0}}
-                  handler={() =>
-                    openInputModal().then(value => {
-                      if (!value) {
-                        return;
-                      }
-
-                      const gasPrice = parseUnits(value, 'gwei');
-
-                      setTransaction(transaction => {
-                        return {
-                          ...transaction,
-                          maxFeePerGas: gasPrice,
-                          maxPriorityFeePerGas: gasPrice,
-                        };
-                      });
-                    })
-                  }
-                />
-                <AsyncIconButton
-                  icon="refresh"
-                  style={{margin: 0}}
-                  handler={() => updateFeeData()}
-                />
-              </View>
-            )}
-          />
+          {maxGasFeeText && (
+            <List.Item
+              title="Max gas fee"
+              description={maxGasFeeText}
+              right={editFeeListItemRight}
+            />
+          )}
           {estimatedGasFeeText && (
             <List.Item
               title="Estimated gas fee"
               description={estimatedGasFeeText}
+            />
+          )}
+          {legacyGasFeeText && (
+            <List.Item
+              title="Gas fee"
+              description={legacyGasFeeText}
+              right={editFeeListItemRight}
             />
           )}
         </List.Section>
@@ -366,7 +417,10 @@ export function SendTransaction({
           )}
         </View>
       </ScrollView>
-      <InputModal placeholder={maxFeePerGasText} {...inputModalProps} />
+      <InputModal
+        placeholder={maxFeePerGasText ?? legacyGasPriceText}
+        {...inputModalProps}
+      />
     </>
   );
 }
