@@ -1,7 +1,7 @@
 export const NEW_CARD_BACKUP_NEEDED_FOR_ACCESS_CODE_MESSAGE =
   'This seems to be a new card. \
-To set access code, you may need to back it up with official Tangem app first. \
-Setting access code on a card without backup would result in error.';
+To set access code, you need to complete the backup process in card settings. \
+You can only backup a card once, but it is possible to purge the wallets and import new ones if backup is not actually necessary.';
 
 export const WALLET_KIT_SCAM_ALERT = {
   title: 'Scam alert',

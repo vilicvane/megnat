@@ -126,7 +126,7 @@ export default function EditCustomChainScreen(): ReactNode {
           </List.Accordion>
         )}
       </ScrollView>
-      <View style={{margin: 16}}>
+      <View style={{padding: 16}}>
         <AsyncButton
           mode="contained"
           disabled={!valid}

@@ -268,7 +268,7 @@ export default function SessionScreen(): ReactNode {
           </List.Accordion>
         )}
       </ScrollView>
-      <View style={{margin: 16, flexDirection: 'row', gap: 8}}>
+      <View style={{padding: 16, flexDirection: 'row', gap: 10}}>
         <AsyncButton
           mode="contained"
           buttonColor={theme.colors.secondaryContainer}

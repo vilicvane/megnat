@@ -43,16 +43,14 @@ export function useAsyncValue<T>(
 
 export function useAsyncValueUpdate<T>(
   callback: (update: boolean) => Promise<T>,
-): [T | undefined, () => void] {
+): [T | undefined, () => Promise<void>, (value: T) => void] {
   const [state, setState] = useState<T>();
 
-  const update = useEvent(() => {
-    void callback(true).then(setState);
-  });
+  const update = useEvent(() => callback(true).then(setState));
 
   useMountEffect(() => void callback(false).then(setState));
 
-  return [state, update];
+  return [state, update, setState];
 }
 
 export function useRefresh(): () => void {
@@ -109,4 +107,22 @@ export function useEventUpdateValue<T, TEventData>(
   }, [callback, ...events]);
 
   return value;
+}
+
+export function asyncEffect(
+  callback: (options: {signal: AbortSignal}) => Promise<void>,
+): () => void {
+  const controller = new AbortController();
+
+  void callback({
+    signal: controller.signal,
+  }).catch(error => {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return;
+    }
+
+    throw error;
+  });
+
+  return () => controller.abort();
 }

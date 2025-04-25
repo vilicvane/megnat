@@ -237,9 +237,9 @@ export default function IndexScreen(): ReactNode {
         )}
       </ScrollView>
       {(pendingSessionRequests.length > 0 || wallets.length > 0) && (
-        <View style={{margin: 16, gap: 8}}>
-          <View>
-            {pendingSessionRequests.length > 0 && (
+        <View style={{padding: 16, gap: 10}}>
+          {pendingSessionRequests.length > 0 && (
+            <View>
               <Button
                 mode="contained"
                 disabled={pendingSessionRequests.length === 0}
@@ -257,21 +257,21 @@ export default function IndexScreen(): ReactNode {
                     ? 'View pending request'
                     : 'No pending requests'}
               </Button>
-            )}
-            {pendingSessionRequests.length > 1 && (
-              <Badge
-                style={{
-                  position: 'absolute',
-                  top: -8,
-                  right: 0,
-                  backgroundColor: theme.colors.secondaryContainer,
-                  color: theme.colors.onSecondaryContainer,
-                }}
-              >
-                {pendingSessionRequests.length}
-              </Badge>
-            )}
-          </View>
+              {pendingSessionRequests.length > 1 && (
+                <Badge
+                  style={{
+                    position: 'absolute',
+                    top: -8,
+                    right: 0,
+                    backgroundColor: theme.colors.secondaryContainer,
+                    color: theme.colors.onSecondaryContainer,
+                  }}
+                >
+                  {pendingSessionRequests.length}
+                </Badge>
+              )}
+            </View>
+          )}
           <Button
             mode="contained"
             buttonColor={theme.colors.surfaceVariant}

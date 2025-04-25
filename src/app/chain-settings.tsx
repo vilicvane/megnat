@@ -53,7 +53,7 @@ export default function ChainSettingsScreen(): ReactNode {
         )}
       </ScrollView>
       {!keyInputActive && (
-        <View style={{margin: 16}}>
+        <View style={{padding: 16}}>
           <Button
             mode="contained"
             buttonColor={theme.colors.primaryContainer}

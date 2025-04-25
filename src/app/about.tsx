@@ -158,7 +158,7 @@ export default function AboutScreen(): ReactNode {
           />
         </List.Section>
       </ScrollView>
-      <View style={{padding: 16, gap: 8}}>
+      <View style={{padding: 16, gap: 10}}>
         <Button
           mode="contained"
           buttonColor={theme.colors.primaryContainer}

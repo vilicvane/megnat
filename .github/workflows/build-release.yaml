@@ -6,6 +6,11 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+-[0-9]+'
 permissions:
   contents: write
+  id-token: write
+  attestations: write
+env:
+  APK_NAME: megnat-${{ github.ref_name }}.apk
+  AAB_NAME: megnat-${{ github.ref_name }}.aab
 jobs:
   build-android:
     runs-on: ubuntu-latest
@@ -24,10 +29,18 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: cd android && ./gradlew clean assembleRelease
-      - run: mv android/app/build/outputs/apk/release/app-release.apk megnat-${{ github.ref_name }}.apk
+        run: cd android && ./gradlew assembleRelease && ./gradlew bundleRelease
+      - run: mv android/app/build/outputs/apk/release/app-release.apk ${{ env.APK_NAME }}
+      - run: mv android/app/build/outputs/bundle/release/app-release.aab ${{ env.AAB_NAME }}
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            ${{ env.APK_NAME }}
+            ${{ env.AAB_NAME }}
       - uses: softprops/action-gh-release@v2
         with:
           name: Release ${{ github.ref_name }}
           prerelease: ${{ contains(github.ref_name, '-') }}
-          files: megnat-${{ github.ref_name }}.apk
+          files: |
+            ${{ env.APK_NAME }}
+            ${{ env.AAB_NAME }}

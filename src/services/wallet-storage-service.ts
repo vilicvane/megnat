@@ -67,22 +67,6 @@ export class WalletStorageService {
     return wallet;
   }
 
-  getWalletByAddress(
-    address: string,
-  ): {wallet: Wallet; derivation: WalletDerivation} | undefined {
-    address = ethers.getAddress(address);
-
-    for (const wallet of this.wallets) {
-      for (const derivation of wallet.derivations) {
-        if (derivation.address === address) {
-          return {wallet, derivation};
-        }
-      }
-    }
-
-    return undefined;
-  }
-
   async renameWallet(walletPublicKey: string, name: string): Promise<void> {
     const wallet = this.requireWalletByWalletPublicKey(walletPublicKey);
 
@@ -167,6 +151,31 @@ export function useWallets(service: WalletStorageService): Wallet[] {
   );
 
   return wallets;
+}
+
+export function useWalletByAddress(
+  service: WalletStorageService,
+  address: string | undefined,
+): {wallet: Wallet; derivation: WalletDerivation} | undefined {
+  const wallets = useWallets(service);
+
+  address = address ? ethers.getAddress(address) : undefined;
+
+  return useMemo(() => {
+    if (address === undefined) {
+      return undefined;
+    }
+
+    for (const wallet of wallets) {
+      for (const derivation of wallet.derivations) {
+        if (derivation.address === address) {
+          return {wallet, derivation};
+        }
+      }
+    }
+
+    return undefined;
+  }, [wallets, address]);
 }
 
 export function useWalletAddressSet(

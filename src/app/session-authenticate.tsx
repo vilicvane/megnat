@@ -13,9 +13,10 @@ import {
 import type {Wallet, WalletDerivation} from '../core/index.js';
 import {TangemSigner} from '../core/index.js';
 import {useEntrances} from '../entrances.js';
-import type {
-  PendingSessionAuthentication,
-  WalletKitService,
+import {
+  type PendingSessionAuthentication,
+  type WalletKitService,
+  useWalletByAddress,
 } from '../services/index.js';
 import {useTheme} from '../theme.js';
 
@@ -40,13 +41,14 @@ export default function SessionAuthenticateScreen(): ReactNode {
     }
   }, [authentication]);
 
+  const wallet = useWalletByAddress(
+    walletStorageService,
+    authentication?.address,
+  );
+
   if (!authentication) {
     return null;
   }
-
-  const wallet = walletStorageService.getWalletByAddress(
-    authentication.address,
-  );
 
   const displayMessage = authentication.message.replace(
     /^Resources:(?:\n- .+)+$/m,
@@ -98,10 +100,10 @@ export default function SessionAuthenticateScreen(): ReactNode {
         </List.Section>
         <View
           style={{
-            margin: 16,
+            padding: 16,
             marginTop: 'auto',
             flexDirection: 'row',
-            gap: 8,
+            gap: 10,
           }}
         >
           <AsyncButton

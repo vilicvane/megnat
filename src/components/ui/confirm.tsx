@@ -24,3 +24,15 @@ export async function confirm(
     Alert.alert(title, message, buttons);
   });
 }
+
+export async function alert(
+  title: string,
+  message: string,
+  confirmText = 'OK',
+): Promise<void> {
+  return new Promise<void>(resolve => {
+    Alert.alert(title, message, [
+      {text: confirmText, style: 'default', onPress: () => resolve()},
+    ]);
+  });
+}

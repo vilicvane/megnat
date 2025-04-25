@@ -77,10 +77,10 @@ export default function SessionProposalScreen(): ReactNode {
       </ScrollView>
       <View
         style={{
-          margin: 16,
+          padding: 16,
           marginTop: 'auto',
           flexDirection: 'row',
-          gap: 8,
+          gap: 10,
         }}
       >
         <AsyncButton

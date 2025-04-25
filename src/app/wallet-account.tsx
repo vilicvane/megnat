@@ -13,6 +13,7 @@ import {AsyncButton} from '../components/ui/index.js';
 import {useEntrances} from '../entrances.js';
 import type {UIService, WalletKitService} from '../services/index.js';
 import {
+  useWalletByAddress,
   useWalletKitPendingSessionRequests,
   useWalletKitSessions,
 } from '../services/index.js';
@@ -33,8 +34,9 @@ export default function WalletAccountScreen(): ReactNode {
 
   const sessions = useWalletKitSessions(walletKitService, address);
 
-  const derivationPath =
-    walletStorageService.getWalletByAddress(address)?.derivation.path;
+  const wallet = useWalletByAddress(walletStorageService, address);
+
+  const derivationPath = wallet?.derivation.path;
 
   const [qrCodeInputModalProps, openQrCodeInputModal] =
     useQRCodeInputModalProps();
@@ -71,7 +73,7 @@ export default function WalletAccountScreen(): ReactNode {
           <SessionList sessions={sessions} address={address} />
         )}
       </ScrollView>
-      <View style={{margin: 16}}>
+      <View style={{padding: 16}}>
         <AsyncButton
           mode="contained"
           buttonColor={theme.colors.primaryContainer}

@@ -121,10 +121,9 @@ export default function WalletScreen(): ReactNode {
           ))}
         </List.Section>
       </ScrollView>
-      <View style={{margin: 16, gap: 8}}>
+      <View style={{padding: 16, gap: 10}}>
         {addingDerivation && (
           <EditableTextInput
-            style={{marginBottom: 8}}
             mode="outlined"
             label="Derivation"
             autoFocus

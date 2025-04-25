@@ -5,7 +5,7 @@ import {LogBox, StatusBar, View} from 'react-native';
 import {PaperProvider} from 'react-native-paper';
 import {setUnhandledPromiseRejectionTracker} from 'react-native-promise-rejection-utils';
 
-import {EntrancesContext, createEntrances} from '../entrances.js';
+import {EntrancesContext, entrancesPromise} from '../entrances.js';
 import {useAsyncValue} from '../hooks/index.js';
 import {THEME} from '../theme.js';
 
@@ -18,15 +18,7 @@ setUnhandledPromiseRejectionTracker((_id, error) => {
 });
 
 export default function RootLayout(): ReactNode {
-  const entrances = useAsyncValue(
-    async () =>
-      createEntrances({
-        walletKit: {
-          projectId: '00ce63cc0e5e65fcc7a50c8bd80c6403',
-        },
-      }),
-    [],
-  );
+  const entrances = useAsyncValue(() => entrancesPromise, []);
 
   useEffect(() => {
     if (entrances) {

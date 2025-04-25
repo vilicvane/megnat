@@ -1,13 +1,13 @@
 import {router} from 'expo-router';
 import type {ReactNode} from 'react';
-import React, {useState} from 'react';
+import React, {useEffect} from 'react';
 import {Alert, ScrollView, View} from 'react-native';
-import {Appbar, List} from 'react-native-paper';
+import {Appbar, Button, List} from 'react-native-paper';
 
 import {AsyncButton, AsyncIconButton, confirm} from '../components/ui/index.js';
 import {useEntrances} from '../entrances.js';
 import {useRefresh} from '../hooks/index.js';
-import type {TangemScanResponse} from '../tangem.js';
+import type {TangemCardResponse} from '../tangem.js';
 import {tangem, tangemWalletToWallet} from '../tangem.js';
 import {useTheme} from '../theme.js';
 
@@ -18,16 +18,14 @@ export default function CardSettingsScreen(): ReactNode {
 
   const refresh = useRefresh();
 
-  const [card] = useState(() => {
-    const card = uiService.state.card;
+  const {card} = uiService.state;
 
+  useEffect(() => {
     if (!card) {
       router.back();
       return undefined;
     }
-
-    return card;
-  });
+  }, [card]);
 
   if (!card) {
     return null;
@@ -120,22 +118,36 @@ export default function CardSettingsScreen(): ReactNode {
           </List.Section>
         )}
       </ScrollView>
-      <View style={{margin: 16, gap: 8}}>
+      <View style={{padding: 16, gap: 10}}>
+        {card.backupStatus.status === 'active' && (
+          <AsyncButton
+            mode="contained"
+            buttonColor={theme.colors.primaryContainer}
+            handler={() => changeAccessCode(card.cardId)}
+          >
+            Change access code
+          </AsyncButton>
+        )}
+        {card.backupStatus.status === 'noBackup' && card.wallets.length > 0 && (
+          <Button
+            mode="contained"
+            buttonColor={theme.colors.primaryContainer}
+            onPress={() => {
+              router.push({
+                pathname: '/backup',
+                params: {cardId: card.cardId},
+              });
+            }}
+          >
+            Backup card
+          </Button>
+        )}
         <AsyncButton
           mode="contained"
-          buttonColor={theme.colors.primaryContainer}
-          handler={() => changeAccessCode(card.cardId)}
+          buttonColor={theme.colors.secondaryContainer}
+          handler={() => resetToFactorySettings(card).finally(refresh)}
         >
-          Change access code
-        </AsyncButton>
-        <AsyncButton
-          mode="elevated"
-          textColor={theme.colors.secondary}
-          handler={async () => {
-            await purgeAllWallets(card, refresh);
-          }}
-        >
-          Purge all wallets
+          Reset to factory settings
         </AsyncButton>
       </View>
     </>
@@ -143,7 +155,7 @@ export default function CardSettingsScreen(): ReactNode {
 }
 
 async function purgeWallet(
-  card: TangemScanResponse,
+  card: TangemCardResponse,
   address: string | undefined,
   walletPublicKey: string,
   onChange: () => void,
@@ -187,14 +199,11 @@ async function changeAccessCode(cardId: string): Promise<void> {
   await tangem.setAccessCode({cardId});
 }
 
-async function purgeAllWallets(
-  card: TangemScanResponse,
-  onChange: () => void,
-): Promise<void> {
+async function resetToFactorySettings(card: TangemCardResponse): Promise<void> {
   if (
     !(await confirm(
-      'Purge all wallets',
-      `You are going to purge all wallets on card ${card.cardId}, ALL keys of ALL wallets on the card will be ERASED!`,
+      'Reset to factory settings',
+      `You are going to reset the card ${card.cardId} to factory settings, ALL wallets on the card will be ERASED!`,
     ))
   ) {
     return;
@@ -203,22 +212,23 @@ async function purgeAllWallets(
   if (
     !(await confirm(
       'Double check',
-      `Please confirm the card id ${card.cardId}, are you sure you want to purge all wallets on this card?`,
-      'Purge',
+      `Please confirm the card id ${card.cardId}, are you sure you want to reset the card to factory settings?`,
+      'Reset',
       true,
     ))
   ) {
     return;
   }
 
-  await tangem.purgeAllWallets({cardId: card.cardId});
+  await tangem.resetToFactorySettings({cardId: card.cardId});
 
   card.wallets = [];
+  card.backupStatus = {
+    status: 'noBackup',
+  };
 
   Alert.alert(
     'Success',
-    `All wallets on card ${card.cardId} have been purged successfully.`,
+    `Card ${card.cardId} has been successfully reset to factory settings.`,
   );
-
-  onChange();
 }

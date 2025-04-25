@@ -23,9 +23,21 @@ It is created to unleash the full potential of Tangem cards and provide a possib
 - 💰 Respect dApps' gas price settings, big big money saved over time.
 - 🔌 Custom chains support for advanced users.
 
+## Screenshots
+
+<p align="center">
+  <img src="./res/screenshots/wallets.png" width="18%" alt="wallets" />
+  <img src="./res/screenshots/transaction-data-verified.png" width="18%" alt="transaction-data-verified" />
+  <img src="./res/screenshots/transaction-data-unverified.png" width="18%" alt="transaction-data-unverified" />
+  <img src="./res/screenshots/malicious-app.png" width="18%" alt="malicious-app" />
+  <img src="./res/screenshots/session.png" width="18%" alt="session" />
+</p>
+
 ## Downloads
 
 You can find the latest version of the app on [GitHub Releases](https://github.com/vilicvane/megnat/releases/latest).
+
+> Packages are built directly using GitHub Actions from source code with signed build provenance [attestations](https://github.com/vilicvane/megnat/attestations) that can be verified by yourself.
 
 ## A signing app
 
@@ -42,7 +54,7 @@ Currently it is **EVM-only**, and there is no plan to support other chains unles
 - [ ] Security key (if possible).
 - [x] Transaction data decoding.
 - [ ] Pending transactions (to replace or cancel).
-- [ ] Card backup.
+- [x] Card backup.
 
 ## Support our work
 
