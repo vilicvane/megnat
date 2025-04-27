@@ -118,6 +118,7 @@ android {
     }
     buildTypes {
         debug {
+            applicationIdSuffix ".debug"
             signingConfig signingConfigs.debug
         }
         release {
@@ -189,4 +190,5 @@ dependencies {
     }
 
     implementation("androidx.credentials:credentials:1.5.0")
+    implementation("androidx.datastore:datastore-preferences:1.1.4")
 }

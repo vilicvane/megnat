@@ -1,5 +1,7 @@
 import {execSync} from 'child_process';
 
+const PRODUCTION = process.env.NODE_ENV === 'production';
+
 export default {
   name: 'Megnat',
   slug: 'megnat',
@@ -17,7 +19,7 @@ export default {
       foregroundImage: './assets/images/adaptive-icon.png',
       backgroundColor: '#111111',
     },
-    package: 'com.megnat',
+    package: PRODUCTION ? 'com.megnat' : 'com.megnat.debug',
   },
   plugins: [
     'expo-router',

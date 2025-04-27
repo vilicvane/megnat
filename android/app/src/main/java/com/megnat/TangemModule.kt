@@ -28,9 +28,16 @@
 package com.megnat
 
 import android.app.Activity
+import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
+import androidx.datastore.core.DataStore
+import androidx.datastore.dataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.fragment.app.FragmentActivity
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.LifecycleEventListener
@@ -73,420 +80,440 @@ import com.tangem.sdk.extensions.localizedDescription
 import com.tangem.sdk.nfc.AndroidNfcAvailabilityProvider
 import com.tangem.sdk.nfc.NfcManager
 import com.tangem.sdk.storage.create
+import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.lang.ref.WeakReference
 
 class TangemModule(val reactContext: ReactApplicationContext): ReactContextBaseJavaModule(reactContext),
-    LifecycleEventListener {
-    private var nfcManager = WeakReference<NfcManager?>(null)
-    private var sdk = WeakReference<TangemSdk?>(null)
-    private var backupService: BackupService? = null
+  LifecycleEventListener {
+  private var nfcManager = WeakReference<NfcManager?>(null)
+  private var sdk = WeakReference<TangemSdk?>(null)
+  private var backupService: BackupService? = null
 
-    private val handler = Handler(Looper.getMainLooper())
-    private val converter = MoshiJsonConverter.INSTANCE
+  private val handler = Handler(Looper.getMainLooper())
+  private val converter = MoshiJsonConverter.INSTANCE
 
-    init {
-        reactContext.addLifecycleEventListener(this)
+  init {
+    reactContext.addLifecycleEventListener(this)
+  }
+
+  override fun getName() = "TangemModule"
+
+  private fun getNfcManager(): NfcManager? {
+    nfcManager.get()?.let {
+        nfcManager -> return nfcManager
     }
 
-    override fun getName() = "TangemModule"
+    val activity = currentActivity ?: return null
 
-    private fun getNfcManager(): NfcManager? {
-        nfcManager.get()?.let {
-            nfcManager -> return nfcManager
-        }
+    val nfcManager = TangemSdk.initNfcManager(activity as FragmentActivity)
 
-        val activity = currentActivity ?: return null
+    this.nfcManager = WeakReference(nfcManager)
 
-        val nfcManager = TangemSdk.initNfcManager(activity as FragmentActivity)
+    return nfcManager
+  }
 
-        this.nfcManager = WeakReference(nfcManager)
+  private fun getSdk(): TangemSdk? {
+    sdk.get()?.let { sdk -> return sdk }
 
-        return nfcManager
+    val nfcManager = getNfcManager() ?: return null
+
+    val activity = currentActivity ?: return null
+
+    val authenticationManager =
+      TangemSdk.initAuthenticationManager(activity as FragmentActivity)
+
+    val secureStorage = SecureStorage.create(reactContext)
+
+    val keystoreManager =
+      TangemSdk.initKeystoreManager(authenticationManager, secureStorage)
+
+    val viewDelegate = DefaultSessionViewDelegate(nfcManager, activity)
+
+    val config = Config()
+
+    config.userCodeRequestPolicy = UserCodeRequestPolicy.AlwaysWithBiometrics(UserCodeType.AccessCode)
+    config.defaultDerivationPaths = mutableMapOf<EllipticCurve, List<DerivationPath>>().apply {
+      this[EllipticCurve.Secp256k1] = listOf(DerivationPath("m/44'/60'/0'/0/0"))
     }
 
-    private fun getSdk(): TangemSdk? {
-        sdk.get()?.let { sdk -> return sdk }
+    val sdk = TangemSdk(
+      reader = nfcManager.reader,
+      viewDelegate = viewDelegate,
+      nfcAvailabilityProvider = AndroidNfcAvailabilityProvider(activity),
+      secureStorage = secureStorage,
+      wordlist = Wordlist.getWordlist(activity),
+      authenticationManager = authenticationManager,
+      keystoreManager = keystoreManager,
+      config = config,
+    )
 
-        val nfcManager = getNfcManager() ?: return null
+    this.sdk = WeakReference(sdk)
 
-        val activity = currentActivity ?: return null
+    return sdk
+  }
 
-        val authenticationManager =
-            TangemSdk.initAuthenticationManager(activity as FragmentActivity)
+  private fun requireSdk(): TangemSdk {
+    return getSdk() ?: throw Exception("Unable to initialize Tangem SDK")
+  }
 
-        val secureStorage = SecureStorage.create(reactContext)
+  private fun getBackupService(reset: Boolean = false): BackupService? {
+    if (!reset) {
+      backupService?.let {
+          backupService -> return backupService
+      }
+    }
 
-        val keystoreManager =
-            TangemSdk.initKeystoreManager(authenticationManager, secureStorage)
+    val sdk = getSdk() ?: return null
+    val activity = currentActivity ?: return null
 
-        val viewDelegate = DefaultSessionViewDelegate(nfcManager, activity)
+    val backupService = BackupService.init(sdk, activity as FragmentActivity)
 
-        val config = Config()
+    this.backupService = backupService
 
-        config.userCodeRequestPolicy = UserCodeRequestPolicy.AlwaysWithBiometrics(UserCodeType.AccessCode)
-        config.defaultDerivationPaths = mutableMapOf<EllipticCurve, List<DerivationPath>>().apply {
-            this[EllipticCurve.Secp256k1] = listOf(DerivationPath("m/44'/60'/0'/0/0"))
+    return backupService
+  }
+
+  private fun requireBackupService(reset: Boolean = false): BackupService {
+    return getBackupService(reset) ?: throw Exception("Unable to initialize Tangem Backup Service")
+  }
+
+  override fun onHostResume() {
+    val activity = currentActivity ?: return
+
+    if (activity.isDestroyed || activity.isFinishing) {
+      return
+    }
+
+    nfcManager.get()?.onStart(activity as AppCompatActivity)
+  }
+
+  override fun onHostPause() {
+    val activity = currentActivity ?: return
+
+    if (activity.isDestroyed || activity.isFinishing) {
+      return
+    }
+
+    nfcManager.get()?.onStop(activity as AppCompatActivity)
+  }
+
+  override fun onHostDestroy() {
+    val activity = currentActivity ?: return
+
+    if (activity.isDestroyed || activity.isFinishing) {
+      return
+    }
+
+    nfcManager.get()?.onStop(activity as AppCompatActivity)
+  }
+
+  @ReactMethod
+  fun scan(promise: Promise) {
+    UiThreadUtil.runOnUiThread {
+      try {
+        requireSdk().scanCard { handleResult(it, promise) }
+      } catch (ex: Exception) {
+        handleException(ex, promise)
+      }
+    }
+  }
+
+  @ReactMethod
+  fun createWallet(optionMap: ReadableMap, promise: Promise) {
+    UiThreadUtil.runOnUiThread {
+      try {
+        val options = OptionsParser(optionMap)
+
+        val sdk = requireSdk()
+
+        val extendedPrivateKey = options.getPrivateKey()?.let {
+          ExtendedPrivateKey(
+            it,
+            chainCode = ByteArray(32)
+          )
+        } ?: options.getMnemonic()?.let {
+          val defaultMnemonic = DefaultMnemonic(it, sdk.wordlist)
+          val factory = AnyMasterKeyFactory(defaultMnemonic, "")
+          factory.makeMasterKey(options.getCurveOrDefault())
         }
 
-        val sdk = TangemSdk(
-            reader = nfcManager.reader,
-            viewDelegate = viewDelegate,
-            nfcAvailabilityProvider = AndroidNfcAvailabilityProvider(activity),
-            secureStorage = secureStorage,
-            wordlist = Wordlist.getWordlist(activity),
-            authenticationManager = authenticationManager,
-            keystoreManager = keystoreManager,
-            config = config,
+        val runnable = CreateWalletTask(
+          options.getCurveOrDefault(),
+          extendedPrivateKey
         )
 
-        this.sdk = WeakReference(sdk)
+        sdk.startSessionWithRunnable(
+          runnable,
+        ) { handleResult(it, promise) }
+      } catch (ex: Exception) {
+        handleException(ex, promise)
+      }
+    }
+  }
 
-        return sdk
+  @ReactMethod
+  fun deriveWallet(optionMap: ReadableMap, promise: Promise) {
+    UiThreadUtil.runOnUiThread {
+      try {
+        val options = OptionsParser(optionMap)
+
+        val runnable = DeriveWalletPublicKeyTask(
+          options.requireWalletPublicKey(),
+          options.requireDerivationPath()
+        )
+
+        requireSdk().startSessionWithRunnable(
+          runnable,
+        ) { handleResult(it, promise) }
+      } catch (ex: Exception) {
+        handleException(ex, promise)
+      }
+    }
+  }
+
+  @ReactMethod
+  fun setAccessCode(optionMap: ReadableMap, promise: Promise) {
+    UiThreadUtil.runOnUiThread {
+      try {
+        val options = OptionsParser(optionMap)
+
+        requireSdk().setAccessCode(
+          options.getAccessCode(),
+          options.requireCardId(),
+        ) { handleResult(it, promise) }
+      } catch (ex: Exception) {
+        handleException(ex, promise)
+      }
+    }
+  }
+
+  @ReactMethod
+  fun purgeWallet(optionMap: ReadableMap, promise: Promise) {
+    UiThreadUtil.runOnUiThread {
+      try {
+        val options = OptionsParser(optionMap)
+
+        requireSdk().purgeWallet(
+          options.requireWalletPublicKey(),
+          options.requireCardId(),
+        ) { handleResult(it, promise) }
+      } catch (ex: Exception) {
+        handleException(ex, promise)
+      }
+    }
+  }
+
+  @ReactMethod
+  fun resetToFactorySettings(optionMap: ReadableMap, promise: Promise) {
+    UiThreadUtil.runOnUiThread {
+      try {
+        val options = OptionsParser(optionMap)
+
+        val runnable = ResetToFactorySettingsTask(
+          toResetBackup = true,
+          allowsRequestAccessCodeFromRepository = false
+        )
+
+        requireSdk().startSessionWithRunnable(
+          runnable,
+          cardId = options.requireCardId()
+        ) { handleResult(it, promise) }
+      } catch (ex: Exception) {
+        handleException(ex, promise)
+      }
+    }
+  }
+
+  @ReactMethod
+  fun sign(optionMap: ReadableMap, promise: Promise) {
+    UiThreadUtil.runOnUiThread {
+      try {
+        val options = OptionsParser(optionMap)
+
+        requireSdk().sign(
+          options.getHashes(),
+          options.requireWalletPublicKey(),
+          options.getCardId(),
+          options.getDerivationPath()
+        ) { handleResult(it, promise) }
+      } catch (ex: Exception) {
+        handleException(ex, promise)
+      }
+    }
+  }
+
+  @ReactMethod
+  fun readPrimaryCardToBackup(optionMap: ReadableMap, promise: Promise) {
+    UiThreadUtil.runOnUiThread {
+      try {
+        val options = OptionsParser(optionMap)
+        val backupService = requireBackupService(true)
+
+        backupService.readPrimaryCard(cardId = options.requireCardId()) {
+          handleResult(it, promise)
+        }
+      } catch (ex: Exception) {
+        handleException(ex, promise)
+      }
+    }
+  }
+
+  @ReactMethod
+  fun addBackupCard(promise: Promise) {
+    UiThreadUtil.runOnUiThread {
+      try {
+        requireBackupService().addBackupCard { handleResult(it, promise) }
+      } catch (ex: Exception) {
+        handleException(ex, promise)
+      }
+    }
+  }
+
+  @ReactMethod
+  fun setAccessCodeForBackup(optionMap: ReadableMap, promise: Promise) {
+    UiThreadUtil.runOnUiThread {
+      try {
+        val options = OptionsParser(optionMap)
+
+        requireBackupService().setAccessCode(options.requireAccessCode())
+
+        handleResult(CompletionResult.Success(Unit), promise)
+      } catch (ex: Exception) {
+        handleException(ex, promise)
+      }
+    }
+  }
+
+  @ReactMethod
+  fun proceedBackup(promise: Promise) {
+    UiThreadUtil.runOnUiThread {
+      try {
+        val backupService = requireBackupService()
+
+        backupService.proceedBackup { handleResult(it, promise) }
+      } catch (ex: Exception) {
+        handleException(ex, promise)
+      }
+    }
+  }
+
+  @ReactMethod
+  fun savePasskeyPublicKeys(optionMap: ReadableMap, promise: Promise) {
+    try {
+      val options = OptionsParser(optionMap)
+
+      val keys = options.requirePasskeyPublicKeys()
+
+      runBlocking {
+        reactContext.dataStore.edit {
+          it[PASSKEY_PUBLIC_KEYS] = keys.toSet()
+        }
+      }
+
+      handleResult(CompletionResult.Success(Unit), promise)
+    } catch (ex: Exception) {
+      handleException(ex, promise)
+    }
+  }
+
+  @Throws(JSONException::class)
+  fun toWritableMap(jsonObject: JSONObject): WritableMap {
+    val writableMap = Arguments.createMap()
+    val iterator = jsonObject.keys()
+    while (iterator.hasNext()) {
+      val key = iterator.next() as String
+      val value = jsonObject.get(key)
+      if (value is Float || value is Double) {
+        writableMap.putDouble(key, jsonObject.getDouble(key))
+      } else if (value is Number) {
+        writableMap.putInt(key, jsonObject.getInt(key))
+      } else if (value is String) {
+        writableMap.putString(key, jsonObject.getString(key))
+      } else if (value is Boolean) {
+        writableMap.putBoolean(key, jsonObject.getBoolean(key))
+      } else if (value is JSONObject) {
+        writableMap.putMap(key, toWritableMap(jsonObject.getJSONObject(key)))
+      } else if (value is JSONArray) {
+        writableMap.putArray(key, toWritableMap(jsonObject.getJSONArray(key)))
+      } else if (value === JSONObject.NULL) {
+        writableMap.putNull(key)
+      }
     }
 
-    private fun requireSdk(): TangemSdk {
-        return getSdk() ?: throw Exception("Unable to initialize Tangem SDK")
-    }
+    return writableMap
+  }
 
-    private fun getBackupService(reset: Boolean = false): BackupService? {
-        if (!reset) {
-            backupService?.let {
-                backupService -> return backupService
-            }
+  @Throws(JSONException::class)
+  fun toWritableMap(jsonArray: JSONArray): WritableArray {
+    val writableArray = Arguments.createArray()
+    for (i in 0 until jsonArray.length()) {
+      val value = jsonArray.get(i)
+      if (value is Float || value is Double) {
+        writableArray.pushDouble(jsonArray.getDouble(i))
+      } else if (value is Number) {
+        writableArray.pushInt(jsonArray.getInt(i))
+      } else if (value is String) {
+        writableArray.pushString(jsonArray.getString(i))
+      } else if (value is Boolean) {
+        writableArray.pushBoolean(jsonArray.getBoolean(i))
+      } else if (value is JSONObject) {
+        writableArray.pushMap(toWritableMap(jsonArray.getJSONObject(i)))
+      } else if (value is JSONArray) {
+        writableArray.pushArray(toWritableMap(jsonArray.getJSONArray(i)))
+      } else if (value === JSONObject.NULL) {
+        writableArray.pushNull()
+      }
+    }
+    return writableArray
+  }
+
+  private fun normalizeResponse(resp: Any?): WritableMap {
+    val jsonObject = when (resp) {
+      is Boolean, is Double, is Int, is String -> JSONObject().apply {
+        put("value", resp)
+      }
+      is Unit -> JSONObject()
+      else -> JSONObject(converter.toJson(resp))
+    }
+    return toWritableMap(jsonObject)
+  }
+
+
+  private fun handleResult(completionResult: CompletionResult<*>, promise: Promise) {
+    when (completionResult) {
+      is CompletionResult.Success -> {
+        handler.post { promise.resolve(normalizeResponse(completionResult.data)) }
+      }
+
+      is CompletionResult.Failure -> {
+        val error = completionResult.error
+        val errorMessage = if (error is TangemSdkError) {
+          if (currentActivity == null) {
+            error.customMessage
+          } else error.localizedDescription(
+            currentActivity as Activity
+          )
+        } else {
+          error.customMessage
         }
 
-        val sdk = getSdk() ?: return null
-        val activity = currentActivity ?: return null
-
-        val backupService = BackupService.init(sdk, activity as FragmentActivity)
-
-        this.backupService = backupService
-
-        return backupService
-    }
-
-    private fun requireBackupService(reset: Boolean = false): BackupService {
-        return getBackupService(reset) ?: throw Exception("Unable to initialize Tangem Backup Service")
-    }
-
-    override fun onHostResume() {
-        val activity = currentActivity ?: return
-
-        if (activity.isDestroyed || activity.isFinishing) {
-            return
-        }
-
-        nfcManager.get()?.onStart(activity as AppCompatActivity)
-    }
-
-    override fun onHostPause() {
-        val activity = currentActivity ?: return
-
-        if (activity.isDestroyed || activity.isFinishing) {
-            return
-        }
-
-        nfcManager.get()?.onStop(activity as AppCompatActivity)
-    }
-
-    override fun onHostDestroy() {
-        val activity = currentActivity ?: return
-
-        if (activity.isDestroyed || activity.isFinishing) {
-            return
-        }
-
-        nfcManager.get()?.onStop(activity as AppCompatActivity)
-    }
-
-    @ReactMethod
-    fun scan(promise: Promise) {
-        UiThreadUtil.runOnUiThread {
-            try {
-                requireSdk().scanCard { handleResult(it, promise) }
-            } catch (ex: Exception) {
-                handleException(ex, promise)
-            }
-        }
-    }
-
-    @ReactMethod
-    fun createWallet(optionMap: ReadableMap, promise: Promise) {
-        UiThreadUtil.runOnUiThread {
-            try {
-                val options = OptionsParser(optionMap)
-
-                val sdk = requireSdk()
-
-                val extendedPrivateKey = options.getPrivateKey()?.let {
-                    ExtendedPrivateKey(
-                        it,
-                        chainCode = ByteArray(32)
-                    )
-                } ?: options.getMnemonic()?.let {
-                    val defaultMnemonic = DefaultMnemonic(it, sdk.wordlist)
-                    val factory = AnyMasterKeyFactory(defaultMnemonic, "")
-                    factory.makeMasterKey(options.getCurveOrDefault())
-                }
-
-                val runnable = CreateWalletTask(
-                    options.getCurveOrDefault(),
-                    extendedPrivateKey
-                )
-
-                sdk.startSessionWithRunnable(
-                    runnable,
-                ) { handleResult(it, promise) }
-            } catch (ex: Exception) {
-                handleException(ex, promise)
-            }
-        }
-    }
-
-    @ReactMethod
-    fun deriveWallet(optionMap: ReadableMap, promise: Promise) {
-        UiThreadUtil.runOnUiThread {
-            try {
-                val options = OptionsParser(optionMap)
-
-                val runnable = DeriveWalletPublicKeyTask(
-                    options.requireWalletPublicKey(),
-                    options.requireDerivationPath()
-                )
-
-                requireSdk().startSessionWithRunnable(
-                    runnable,
-                ) { handleResult(it, promise) }
-            } catch (ex: Exception) {
-                handleException(ex, promise)
-            }
-        }
-    }
-
-    @ReactMethod
-    fun setAccessCode(optionMap: ReadableMap, promise: Promise) {
-        UiThreadUtil.runOnUiThread {
-            try {
-                val options = OptionsParser(optionMap)
-
-                requireSdk().setAccessCode(
-                    options.getAccessCode(),
-                    options.requireCardId(),
-                ) { handleResult(it, promise) }
-            } catch (ex: Exception) {
-                handleException(ex, promise)
-            }
-        }
-    }
-
-    @ReactMethod
-    fun purgeWallet(optionMap: ReadableMap, promise: Promise) {
-        UiThreadUtil.runOnUiThread {
-            try {
-                val options = OptionsParser(optionMap)
-
-                requireSdk().purgeWallet(
-                    options.requireWalletPublicKey(),
-                    options.requireCardId(),
-                ) { handleResult(it, promise) }
-            } catch (ex: Exception) {
-                handleException(ex, promise)
-            }
-        }
-    }
-
-    @ReactMethod
-    fun resetToFactorySettings(optionMap: ReadableMap, promise: Promise) {
-        UiThreadUtil.runOnUiThread {
-            try {
-                val options = OptionsParser(optionMap)
-
-                val runnable = ResetToFactorySettingsTask(
-                    toResetBackup = true,
-                    allowsRequestAccessCodeFromRepository = false
-                )
-
-                requireSdk().startSessionWithRunnable(
-                    runnable,
-                    cardId = options.requireCardId()
-                ) { handleResult(it, promise) }
-            } catch (ex: Exception) {
-                handleException(ex, promise)
-            }
-        }
-    }
-
-    @ReactMethod
-    fun sign(optionMap: ReadableMap, promise: Promise) {
-        UiThreadUtil.runOnUiThread {
-            try {
-                val options = OptionsParser(optionMap)
-
-                requireSdk().sign(
-                    options.getHashes(),
-                    options.requireWalletPublicKey(),
-                    options.getCardId(),
-                    options.getDerivationPath()
-                ) { handleResult(it, promise) }
-            } catch (ex: Exception) {
-                handleException(ex, promise)
-            }
-        }
-    }
-
-    @ReactMethod
-    fun readPrimaryCardToBackup(optionMap: ReadableMap, promise: Promise) {
-        UiThreadUtil.runOnUiThread {
-            try {
-                val options = OptionsParser(optionMap)
-                val backupService = requireBackupService(true)
-
-                backupService.readPrimaryCard(cardId = options.requireCardId()) {
-                    handleResult(it, promise)
-                }
-            } catch (ex: Exception) {
-                handleException(ex, promise)
-            }
-        }
-    }
-
-    @ReactMethod
-    fun addBackupCard(promise: Promise) {
-        UiThreadUtil.runOnUiThread {
-            try {
-                requireBackupService().addBackupCard { handleResult(it, promise) }
-            } catch (ex: Exception) {
-                handleException(ex, promise)
-            }
-        }
-    }
-
-    @ReactMethod
-    fun setAccessCodeForBackup(optionMap: ReadableMap, promise: Promise) {
-        UiThreadUtil.runOnUiThread {
-            try {
-                val options = OptionsParser(optionMap)
-
-                requireBackupService().setAccessCode(options.requireAccessCode())
-
-                handleResult(CompletionResult.Success(Unit), promise)
-            } catch (ex: Exception) {
-                handleException(ex, promise)
-            }
-        }
-    }
-
-    @ReactMethod
-    fun proceedBackup(promise: Promise) {
-        UiThreadUtil.runOnUiThread {
-            try {
-                val backupService = requireBackupService()
-
-                backupService.proceedBackup { handleResult(it, promise) }
-            } catch (ex: Exception) {
-                handleException(ex, promise)
-            }
-        }
-    }
-
-    @Throws(JSONException::class)
-    fun toWritableMap(jsonObject: JSONObject): WritableMap {
-        val writableMap = Arguments.createMap()
-        val iterator = jsonObject.keys()
-        while (iterator.hasNext()) {
-            val key = iterator.next() as String
-            val value = jsonObject.get(key)
-            if (value is Float || value is Double) {
-                writableMap.putDouble(key, jsonObject.getDouble(key))
-            } else if (value is Number) {
-                writableMap.putInt(key, jsonObject.getInt(key))
-            } else if (value is String) {
-                writableMap.putString(key, jsonObject.getString(key))
-            } else if (value is Boolean) {
-                writableMap.putBoolean(key, jsonObject.getBoolean(key))
-            } else if (value is JSONObject) {
-                writableMap.putMap(key, toWritableMap(jsonObject.getJSONObject(key)))
-            } else if (value is JSONArray) {
-                writableMap.putArray(key, toWritableMap(jsonObject.getJSONArray(key)))
-            } else if (value === JSONObject.NULL) {
-                writableMap.putNull(key)
-            }
-        }
-
-        return writableMap
-    }
-
-    @Throws(JSONException::class)
-    fun toWritableMap(jsonArray: JSONArray): WritableArray {
-        val writableArray = Arguments.createArray()
-        for (i in 0 until jsonArray.length()) {
-            val value = jsonArray.get(i)
-            if (value is Float || value is Double) {
-                writableArray.pushDouble(jsonArray.getDouble(i))
-            } else if (value is Number) {
-                writableArray.pushInt(jsonArray.getInt(i))
-            } else if (value is String) {
-                writableArray.pushString(jsonArray.getString(i))
-            } else if (value is Boolean) {
-                writableArray.pushBoolean(jsonArray.getBoolean(i))
-            } else if (value is JSONObject) {
-                writableArray.pushMap(toWritableMap(jsonArray.getJSONObject(i)))
-            } else if (value is JSONArray) {
-                writableArray.pushArray(toWritableMap(jsonArray.getJSONArray(i)))
-            } else if (value === JSONObject.NULL) {
-                writableArray.pushNull()
-            }
-        }
-        return writableArray
-    }
-
-    private fun normalizeResponse(resp: Any?): WritableMap {
-        val jsonObject = when (resp) {
-            is Boolean, is Double, is Int, is String -> JSONObject().apply {
-                put("value", resp)
-            }
-            is Unit -> JSONObject()
-            else -> JSONObject(converter.toJson(resp))
-        }
-        return toWritableMap(jsonObject)
-    }
-
-
-    private fun handleResult(completionResult: CompletionResult<*>, promise: Promise) {
-        when (completionResult) {
-            is CompletionResult.Success -> {
-                handler.post { promise.resolve(normalizeResponse(completionResult.data)) }
-            }
-
-            is CompletionResult.Failure -> {
-                val error = completionResult.error
-                val errorMessage = if (error is TangemSdkError) {
-                    if (currentActivity == null) {
-                        error.customMessage
-                    } else error.localizedDescription(
-                        currentActivity as Activity
-                    )
-                } else {
-                    error.customMessage
-                }
-
-                handler.post {
-                    promise.reject("${error.code}", errorMessage, null)
-                }
-            }
-        }
-    }
-
-    private fun handleException(ex: Exception, promise: Promise) {
         handler.post {
-            val code = 9999
-            val localizedDescription: String = ex.toString()
-            promise.reject("$code", localizedDescription, null)
+          promise.reject("${error.code}", errorMessage, null)
         }
+      }
     }
+  }
+
+  private fun handleException(ex: Exception, promise: Promise) {
+    handler.post {
+      val code = 9999
+      val localizedDescription: String = ex.toString()
+      promise.reject("$code", localizedDescription, null)
+    }
+  }
 
 }
 
@@ -495,90 +522,100 @@ class RequiredArgumentException(arg: String) : Exception(arg)
 
 
 class OptionsParser(private val options: ReadableMap?) {
-    fun getInitialMessage(): Message? {
-        if (!options?.hasKey("initialMessage")!!) return null
+  fun getInitialMessage(): Message? {
+    if (!options?.hasKey("initialMessage")!!) return null
 
-        if (options.getMap("initialMessage") !is ReadableMap) {
-            return null
-        }
-
-        val message = options.getMap("initialMessage") as ReadableMap
-
-        val header = if (message.hasKey("header")) message.getString("header") else ""
-        val body = if (message.hasKey("body")) message.getString("body") else ""
-
-        return Message(
-            header,
-            body
-        )
+    if (options.getMap("initialMessage") !is ReadableMap) {
+      return null
     }
 
-    fun requireWalletPublicKey(): ByteArray {
-        return options?.getString("walletPublicKey")?.hexToBytes() ?:
-            throw RequiredArgumentException("walletPublicKey is required")
-    }
+    val message = options.getMap("initialMessage") as ReadableMap
 
-    fun getCardId(): String? {
-        return options?.getString("cardId")
-    }
+    val header = if (message.hasKey("header")) message.getString("header") else ""
+    val body = if (message.hasKey("body")) message.getString("body") else ""
 
-    fun requireCardId(): String {
-        return getCardId() ?: throw RequiredArgumentException("cardId is required")
-    }
+    return Message(
+      header,
+      body
+    )
+  }
 
-    fun getAccessCode(): String? {
-        return options?.getString("accessCode")
-    }
+  fun requireWalletPublicKey(): ByteArray {
+    return options?.getString("walletPublicKey")?.hexToBytes() ?:
+    throw RequiredArgumentException("walletPublicKey is required")
+  }
 
-    fun requireAccessCode(): String {
-        return getAccessCode() ?: throw RequiredArgumentException("accessCode is required")
-    }
+  fun getCardId(): String? {
+    return options?.getString("cardId")
+  }
 
-    fun getCurveOrDefault(): EllipticCurve {
-        return when (options?.getString("curve")) {
-            "ed25519" -> EllipticCurve.Ed25519
-            "secp256k1" -> EllipticCurve.Secp256k1
-            "secp256r1" -> EllipticCurve.Secp256r1
-            else -> {
-                EllipticCurve.Secp256k1
-            }
-        }
-    }
+  fun requireCardId(): String {
+    return getCardId() ?: throw RequiredArgumentException("cardId is required")
+  }
 
-    fun getPrivateKey(): ByteArray? {
-        return options?.getString("privateKey")?.hexToBytes()
-    }
+  fun getAccessCode(): String? {
+    return options?.getString("accessCode")
+  }
 
-    fun getMnemonic(): String? {
-        return options?.getString("mnemonic")
-    }
+  fun requireAccessCode(): String {
+    return getAccessCode() ?: throw RequiredArgumentException("accessCode is required")
+  }
 
-    fun getHashes(): Array<ByteArray> {
-        val hashes = options?.getArray("hashes")
-        if (hashes == null || hashes.size() == 0) {
-            throw RequiredArgumentException("hashes is required")
-        }
-        return hashes.toArrayList().map { it.toString().hexToBytes() }.toTypedArray()
+  fun getCurveOrDefault(): EllipticCurve {
+    return when (options?.getString("curve")) {
+      "ed25519" -> EllipticCurve.Ed25519
+      "secp256k1" -> EllipticCurve.Secp256k1
+      "secp256r1" -> EllipticCurve.Secp256r1
+      else -> {
+        EllipticCurve.Secp256k1
+      }
     }
+  }
 
-    fun getDerivationPath(): DerivationPath? {
-        return options?.getString("derivationPath")?.let {
-            DerivationPath(it)
-        }
-    }
+  fun getPrivateKey(): ByteArray? {
+    return options?.getString("privateKey")?.hexToBytes()
+  }
 
-    fun requireDerivationPath(): DerivationPath {
-        return getDerivationPath() ?: throw RequiredArgumentException("derivationPath is required")
-    }
+  fun getMnemonic(): String? {
+    return options?.getString("mnemonic")
+  }
 
-    fun getAttestationMode(): AttestationTask.Mode? {
-        return when (options?.getString("attestationMode")) {
-            "offline" -> AttestationTask.Mode.Offline
-            "normal" -> AttestationTask.Mode.Normal
-            "full" -> AttestationTask.Mode.Full
-            else -> {
-                null
-            }
-        }
+  fun getHashes(): Array<ByteArray> {
+    val hashes = options?.getArray("hashes")
+    if (hashes == null || hashes.size() == 0) {
+      throw RequiredArgumentException("hashes is required")
     }
+    return hashes.toArrayList().map { it.toString().hexToBytes() }.toTypedArray()
+  }
+
+  fun getDerivationPath(): DerivationPath? {
+    return options?.getString("derivationPath")?.let {
+      DerivationPath(it)
+    }
+  }
+
+  fun requireDerivationPath(): DerivationPath {
+    return getDerivationPath() ?: throw RequiredArgumentException("derivationPath is required")
+  }
+
+  fun getAttestationMode(): AttestationTask.Mode? {
+    return when (options?.getString("attestationMode")) {
+      "offline" -> AttestationTask.Mode.Offline
+      "normal" -> AttestationTask.Mode.Normal
+      "full" -> AttestationTask.Mode.Full
+      else -> {
+        null
+      }
+    }
+  }
+
+  fun requirePasskeyPublicKeys(): Array<String> {
+    return options
+      ?.getArray("passkeyPublicKeys")
+      ?.toArrayList()?.map {
+        it.toString()
+      }
+      ?.toTypedArray() ?:
+    throw RequiredArgumentException("passkeyPublicKeys is required")
+  }
 }

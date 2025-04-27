@@ -2,6 +2,7 @@ import {ethers} from 'ethers';
 import {useEffect, useMemo, useState} from 'react';
 
 import type {Wallet, WalletDerivation} from '../core/index.js';
+import {tangem} from '../tangem.js';
 
 import type {StorageService} from './storage-service.js';
 
@@ -137,6 +138,13 @@ export class WalletStorageService {
 
   static async create(storage: StorageService): Promise<WalletStorageService> {
     const wallets = await storage.get('wallets');
+
+    const passkeyPublicKeys =
+      wallets?.flatMap(wallet =>
+        wallet.derivations.map(derivation => derivation.publicKey),
+      ) ?? [];
+
+    await tangem.savePasskeyPublicKeys({passkeyPublicKeys});
 
     return new WalletStorageService(storage, wallets ?? []);
   }

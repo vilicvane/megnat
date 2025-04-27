@@ -28,6 +28,7 @@ export type TangemModule = {
   addBackupCard(): Promise<TangemCardResponse>;
   setAccessCodeForBackup(options: {}): Promise<{}>;
   proceedBackup(): Promise<{}>;
+  savePasskeyPublicKeys(options: {passkeyPublicKeys: string[]}): Promise<{}>;
 };
 
 export type TangemCardResponse = {

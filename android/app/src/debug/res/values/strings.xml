@@ -1,0 +1,5 @@
+<resources>
+  <string name="app_name">Megnat ᵈᵉᵛ</string>
+  <string name="app_schema">megnat-dev</string>
+  <string name="credential_provider_schema">megnat-dev.credential-provider</string>
+</resources>

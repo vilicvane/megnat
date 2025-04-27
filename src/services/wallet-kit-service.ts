@@ -468,9 +468,11 @@ export function useWalletKitPendingSessionRequests(
   });
 
   if (address) {
+    address = address.toLowerCase();
+
     requests = requests.filter(request =>
-      request.session.namespaces.eip155.accounts.includes(
-        `eip155:1:${address}`,
+      request.session.namespaces.eip155.accounts.some(
+        account => removeEIP155ChainIdPrefix(account) === address,
       ),
     );
   }
