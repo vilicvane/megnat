@@ -469,8 +469,8 @@ export function useWalletKitPendingSessionRequests(
 
   if (address) {
     requests = requests.filter(request =>
-      request.session.namespaces.eip155.accounts.includes(
-        `eip155:1:${address}`,
+      request.session.namespaces.eip155.accounts.some(
+        sessionAddress => removeEIP155ChainIdPrefix(sessionAddress) === address,
       ),
     );
   }
