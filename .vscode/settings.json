@@ -38,5 +38,6 @@
     "Tangem",
     "vilicvane",
     "walletkit"
-  ]
+  ],
+  "java.configuration.updateBuildConfiguration": "disabled"
 }

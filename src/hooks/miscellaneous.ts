@@ -117,7 +117,11 @@ export function asyncEffect(
   void callback({
     signal: controller.signal,
   }).catch(error => {
-    if (error instanceof DOMException && error.name === 'AbortError') {
+    if (
+      typeof DOMException !== 'undefined' &&
+      error instanceof DOMException &&
+      error.name === 'AbortError'
+    ) {
       return;
     }
 
