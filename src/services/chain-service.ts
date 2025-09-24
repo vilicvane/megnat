@@ -208,9 +208,9 @@ export class ChainService {
     const chains = rawChains.map((rawChain): ListedChain => {
       const chainId = eip155ChainIdToString(BigInt(rawChain.chainId));
       const name = rawChain.title || rawChain.name;
-      const explorer = rawChain.explorers?.find(
-        explorer => explorer.standard === 'EIP3091',
-      )?.url;
+      const explorer =
+        rawChain.explorers?.find(explorer => explorer.standard === 'EIP3091')
+          ?.url ?? rawChain.explorers?.[0]?.url;
 
       return {
         id: chainId,
