@@ -13,6 +13,12 @@
   "files.eol": "\n",
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
+  "terminal.integrated.env.windows": {
+    "JAVA_HOME": "C:\\Program Files\\Android\\Android Studio\\jbr"
+  },
+  "java.import.gradle.java.home": "C:\\Program Files\\Android\\Android Studio\\jbr",
+  "java.configuration.updateBuildConfiguration": "disabled",
+  "java.compile.nullAnalysis.mode": "automatic",
   "typescript.preferences.importModuleSpecifier": "project-relative",
   "typescript.preferences.importModuleSpecifierEnding": "js",
   "typescript.tsdk": "node_modules/typescript/lib",
@@ -33,11 +39,11 @@
     "Networkish",
     "Pressable",
     "qrcode",
+    "Rabby",
     "reown",
     "RPCURLs",
     "Tangem",
     "vilicvane",
     "walletkit"
-  ],
-  "java.configuration.updateBuildConfiguration": "disabled"
+  ]
 }

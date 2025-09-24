@@ -118,6 +118,7 @@ android {
     }
     buildTypes {
         debug {
+            applicationIdSuffix ".dev"
             signingConfig signingConfigs.debug
         }
         release {
@@ -161,8 +162,8 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
-    implementation("com.tangem.tangem-sdk-kotlin:android:release-app_5.20-423")
-    implementation("com.tangem.tangem-sdk-kotlin:core:release-app_5.20-423")
+    implementation("com.tangem.tangem-sdk-kotlin:android:releases-5.29-565")
+    implementation("com.tangem.tangem-sdk-kotlin:core:releases-5.29-565")
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";
