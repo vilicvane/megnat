@@ -23,6 +23,8 @@ import {
   removeEIP155ChainIdPrefix,
 } from '../utils/index.js';
 
+import type {ChainService} from './chain-service.js';
+
 export const SUPPORTED_METHODS = [
   'eth_sendTransaction',
   'eth_sign',
@@ -43,7 +45,10 @@ export class WalletKitService {
       }
     | undefined;
 
-  private constructor(readonly walletKit: WalletKit) {
+  private constructor(
+    private chainService: ChainService,
+    readonly walletKit: WalletKit,
+  ) {
     walletKit.on('session_proposal', event => {
       console.info('session_proposal', event);
 
@@ -267,12 +272,27 @@ export class WalletKitService {
   ): Promise<PendingSession | false> {
     const {id, params} = event;
 
-    const chains = Array.from(
-      new Set([
-        ...(params.requiredNamespaces.eip155?.chains ?? []),
-        ...(params.optionalNamespaces.eip155?.chains ?? []),
-      ]),
-    );
+    const chainSet = new Set([
+      ...(params.requiredNamespaces.eip155?.chains ?? []),
+      ...(params.optionalNamespaces.eip155?.chains ?? []),
+    ]);
+
+    if (/rabby/i.test(event.params.proposer.metadata.name)) {
+      for (const {id: chainId} of this.chainService.getCustomChains()) {
+        if (chainSet.has(chainId)) {
+          continue;
+        }
+
+        const paramOptionalChains = params.optionalNamespaces.eip155?.chains;
+
+        if (paramOptionalChains) {
+          paramOptionalChains.push(chainId);
+          chainSet.add(chainId);
+        }
+      }
+    }
+
+    const chains = Array.from(chainSet);
 
     if (chains.length === 0) {
       await this.walletKit.rejectSession({
@@ -371,7 +391,10 @@ export class WalletKitService {
     'pending-session-request-update',
   );
 
-  static async create(projectId: string): Promise<WalletKitService> {
+  static async create(
+    chainService: ChainService,
+    projectId: string,
+  ): Promise<WalletKitService> {
     const walletKit = await WalletKit.init({
       core: new Core({
         projectId,
@@ -384,7 +407,7 @@ export class WalletKitService {
       },
     });
 
-    return new WalletKitService(walletKit);
+    return new WalletKitService(chainService, walletKit);
   }
 }
 

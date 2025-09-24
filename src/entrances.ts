@@ -21,10 +21,15 @@ export async function createEntrances({
   const uiService = new UIService();
   const storageService = new StorageService();
 
+  const chainService = await ChainService.create(storageService);
+
   return {
     uiService,
-    chainService: await ChainService.create(storageService),
-    walletKitService: await WalletKitService.create(walletKitOptions.projectId),
+    chainService,
+    walletKitService: await WalletKitService.create(
+      chainService,
+      walletKitOptions.projectId,
+    ),
     walletStorageService: await WalletStorageService.create(storageService),
   };
 }
